@@ -28,11 +28,11 @@ export interface AiUsageEntry {
 /** Longest string kept in a detail, at each squeeze level. */
 const STRING_CAPS = [4000, 1500, 400, 120];
 const MAX_DETAIL_BYTES = 20_000;
-const DATA_URL = /data:[^;,\s]+;base64,[A-Za-z0-9+/=]+/g;
+const DATA_URL = /data:[^;,\s]+;base64,[A-Za-z0-9+/=]+/gu;
 
-function squeeze(value: unknown, cap: number): unknown {
+const squeeze = (value: unknown, cap: number): unknown => {
   if (typeof value === "string") {
-    const clean = value.replace(DATA_URL, "[file data]");
+    const clean = value.replaceAll(DATA_URL, "[file data]");
     return clean.length > cap ? `${clean.slice(0, cap)}…` : clean;
   }
   if (Array.isArray(value)) {
@@ -44,13 +44,9 @@ function squeeze(value: unknown, cap: number): unknown {
     );
   }
   return value;
-}
+};
 
-/**
- * The detail made safe to store: no file data, long strings cut, under
- * ~20KB (strings are cut harder until it fits; then only the last steps).
- */
-export function capDetail(detail: UsageDetail | undefined) {
+export const capDetail = (detail: UsageDetail | undefined) => {
   if (!detail) {
     return null;
   }
@@ -67,45 +63,33 @@ export function capDetail(detail: UsageDetail | undefined) {
   return JSON.stringify(last).length <= MAX_DETAIL_BYTES
     ? last
     : { prices: detail.prices, finishReason: detail.finishReason };
-}
+};
 
-/** A short stack excerpt for an error, for the detail view. */
-export function errorStack(error: unknown) {
-  return error instanceof Error && error.stack
+export const errorStack = (error: unknown) =>
+  error instanceof Error && error.stack
     ? error.stack.split("\n").slice(0, 6).join("\n")
     : undefined;
-}
 
-/** Token counts from an AI SDK usage object (missing numbers are 0). */
-export function usageNumbers(usage: LanguageModelUsage | undefined) {
-  return {
-    inputTokens: usage?.inputTokens ?? 0,
-    outputTokens: usage?.outputTokens ?? 0,
-    cachedInputTokens: usage?.inputTokenDetails?.cacheReadTokens ?? 0,
-    reasoningTokens: usage?.outputTokenDetails?.reasoningTokens ?? 0,
-  };
-}
+export const usageNumbers = (usage: LanguageModelUsage | undefined) => ({
+  inputTokens: usage?.inputTokens ?? 0,
+  outputTokens: usage?.outputTokens ?? 0,
+  cachedInputTokens: usage?.inputTokenDetails?.cacheReadTokens ?? 0,
+  reasoningTokens: usage?.outputTokenDetails?.reasoningTokens ?? 0,
+});
 
-/** Adds up usage numbers (e.g. the steps of a reply). */
-export function addUsage(
+export const addUsage = (
   a: ReturnType<typeof usageNumbers>,
   b: ReturnType<typeof usageNumbers>
-) {
-  return {
-    inputTokens: a.inputTokens + b.inputTokens,
-    outputTokens: a.outputTokens + b.outputTokens,
-    cachedInputTokens: a.cachedInputTokens + b.cachedInputTokens,
-    reasoningTokens: a.reasoningTokens + b.reasoningTokens,
-  };
-}
+) => ({
+  inputTokens: a.inputTokens + b.inputTokens,
+  outputTokens: a.outputTokens + b.outputTokens,
+  cachedInputTokens: a.cachedInputTokens + b.cachedInputTokens,
+  reasoningTokens: a.reasoningTokens + b.reasoningTokens,
+});
 
 export const NO_USAGE = usageNumbers(undefined);
 
-/**
- * Stores one AI request with its estimated cost. Fire and forget: a failure
- * is logged and never reaches the request that made the call.
- */
-export function recordAiUsage(entry: AiUsageEntry) {
+export const recordAiUsage = (entry: AiUsageEntry) => {
   const n = {
     inputTokens: Math.max(0, Math.round(entry.inputTokens ?? 0)),
     outputTokens: Math.max(0, Math.round(entry.outputTokens ?? 0)),
@@ -118,9 +102,9 @@ export function recordAiUsage(entry: AiUsageEntry) {
     ...entry.detail,
     prices: { ...priceFor(entry.model), webSearch: WEB_SEARCH_PER_CALL },
   });
-  Promise.resolve()
-    .then(() =>
-      db.insert(aiUsage).values({
+  const save = async () => {
+    try {
+      await db.insert(aiUsage).values({
         id: nanoid(16),
         userId: entry.userId ?? null,
         cvId: entry.cvId ?? null,
@@ -133,15 +117,17 @@ export function recordAiUsage(entry: AiUsageEntry) {
         durationMs: Math.max(0, Math.round(entry.durationMs ?? 0)),
         error: entry.error ? entry.error.slice(0, 500) : null,
         detail,
-      })
-    )
-    .catch((error) => console.error("[ai-usage]", error));
-}
+      });
+    } catch (error) {
+      console.error("[ai-usage]", error);
+    }
+  };
+  save();
+};
 
-/** A short message for an error, for the usage table. */
-export function errorText(error: unknown) {
+export const errorText = (error: unknown) => {
   if (error instanceof Error) {
     return error.message || error.name;
   }
   return typeof error === "string" ? error : "error";
-}
+};

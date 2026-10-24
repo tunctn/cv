@@ -58,7 +58,7 @@ interface Umami {
   track: (name: string, data?: Record<string, unknown>) => void;
 }
 
-function umami(): Umami | null {
+const umami = (): Umami | null => {
   if (typeof window === "undefined") {
     return null;
   }
@@ -67,41 +67,34 @@ function umami(): Umami | null {
     return null;
   }
   return (window as { umami?: Umami }).umami ?? null;
-}
+};
 
-/** Sends a product event; never throws. */
-export function track<N extends TrackName>(
+export const track = <N extends TrackName>(
   name: N,
   ...data: TrackEvents[N] extends Record<string, never> ? [] : [TrackEvents[N]]
-) {
+) => {
   try {
     umami()?.track(name, data[0] as Record<string, unknown> | undefined);
   } catch {
     // Analytics must never break the app.
   }
-}
+};
 
 const once = new Set<string>();
 
-/** Like track, but at most once per key in this page's lifetime. */
-export function trackOnce<N extends TrackName>(
+export const trackOnce = <N extends TrackName>(
   key: string,
   name: N,
   ...data: TrackEvents[N] extends Record<string, never> ? [] : [TrackEvents[N]]
-) {
+) => {
   if (once.has(key)) {
     return;
   }
   once.add(key);
   track(name, ...data);
-}
+};
 
-/**
- * Ties this visit to a pseudonymous id (a hash of the user id, never the id
- * or email itself) so retention and churn can be followed across visits.
- * Only with analytics consent; see Analytics in src/components/analytics.tsx.
- */
-export async function identify(userId: string, guest: boolean) {
+export const identify = async (userId: string, guest: boolean) => {
   const u = umami();
   if (!(u && window.crypto?.subtle)) {
     return;
@@ -119,12 +112,12 @@ export async function identify(userId: string, guest: boolean) {
   } catch {
     // ignore
   }
-}
+};
 
 /** For Umami's data-before-send: drop anything sent from /admin or /print. */
 export const BEFORE_SEND = "__cvUmamiBeforeSend";
 
-export function installBeforeSend() {
+export const installBeforeSend = () => {
   (window as unknown as Record<string, unknown>)[BEFORE_SEND] = (
     _type: string,
     payload: { url?: string }
@@ -140,4 +133,4 @@ export function installBeforeSend() {
       ? false
       : payload;
   };
-}
+};

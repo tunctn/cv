@@ -1,8 +1,15 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { z } from "zod";
 
 import { ResetPasswordForm } from "#/components/auth/password-reset";
 import { m } from "#/paraglide/messages.js";
+
+const routeApi = getRouteApi("/reset-password");
+
+const Page = () => {
+  const { token } = routeApi.useSearch();
+  return <ResetPasswordForm token={token} />;
+};
 
 export const Route = createFileRoute("/reset-password")({
   validateSearch: z.object({ token: z.string().catch("") }),
@@ -14,8 +21,3 @@ export const Route = createFileRoute("/reset-password")({
   }),
   component: Page,
 });
-
-function Page() {
-  const { token } = Route.useSearch();
-  return <ResetPasswordForm token={token} />;
-}

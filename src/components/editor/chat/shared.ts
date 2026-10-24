@@ -1,4 +1,5 @@
 import type { FileUIPart } from "ai";
+
 import { withAttachType } from "#/lib/attachments";
 import { m } from "#/paraglide/messages.js";
 
@@ -43,32 +44,30 @@ export const SUGGESTIONS: (() => string)[] = [
   m.chat_suggest_tailor,
 ];
 
-export function contextText(contexts: ChatContext[]) {
-  return `${CONTEXT_MARK}\n${JSON.stringify(
+export const contextText = (contexts: ChatContext[]) =>
+  `${CONTEXT_MARK}\n${JSON.stringify(
     contexts.map((c) => ({ label: c.label, fields: c.fields }))
   )}`;
-}
 
 export interface ContextSummary {
   fields: { path: string; text: string }[];
   label: string;
 }
 
-export function parseContexts(text: string): ContextSummary[] {
+export const parseContexts = (text: string): ContextSummary[] => {
   try {
     return JSON.parse(text.slice(CONTEXT_MARK.length)) as ContextSummary[];
   } catch {
     return [];
   }
-}
+};
 
-/** Approximate byte size of a data URL's payload, for "PDF · 74 KB". */
-export function dataUrlBytes(url: string) {
+export const dataUrlBytes = (url: string) => {
   const i = url.indexOf(",");
   return i === -1 ? 0 : Math.floor(((url.length - i - 1) * 3) / 4);
-}
+};
 
-export function formatBytes(n: number) {
+export const formatBytes = (n: number) => {
   if (n < 1024) {
     return `${n} B`;
   }
@@ -76,9 +75,9 @@ export function formatBytes(n: number) {
     return `${Math.round(n / 1024)} KB`;
   }
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
-}
+};
 
-export function contextLabels(text: string) {
+export const contextLabels = (text: string) => {
   try {
     return (
       JSON.parse(text.slice(CONTEXT_MARK.length)) as { label: string }[]
@@ -86,23 +85,24 @@ export function contextLabels(text: string) {
   } catch {
     return [];
   }
-}
+};
 
-function readAsDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
+const DATA_URL_CHUNK = 0x80_00;
 
-/** Upload attached files; the message keeps a link, not the bytes. */
-export function toFileParts(
+const readAsDataUrl = async (file: File) => {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += DATA_URL_CHUNK) {
+    binary += String.fromCodePoint(...bytes.subarray(i, i + DATA_URL_CHUNK));
+  }
+  return `data:${file.type || "application/octet-stream"};base64,${btoa(binary)}`;
+};
+
+export const toFileParts = (
   files: File[],
   cvId: string
-): Promise<FileUIPart[]> {
-  return Promise.all(
+): Promise<FileUIPart[]> =>
+  Promise.all(
     files.map(async (f) => {
       const form = new FormData();
       form.set("file", withAttachType(f));
@@ -120,13 +120,11 @@ export function toFileParts(
       };
     })
   );
-}
 
-/** Size in bytes of a file part, from a data URL or our `?size=` link. */
-export function filePartBytes(url: string): number | null {
+export const filePartBytes = (url: string): number | null => {
   if (url.startsWith("data:")) {
     return dataUrlBytes(url);
   }
   const size = Number(new URL(url, "http://x").searchParams.get("size"));
   return Number.isFinite(size) && size > 0 ? size : null;
-}
+};

@@ -60,7 +60,7 @@ export const TEMPLATE_IDS = TEMPLATES.map((t) => t.id) as [string, ...string[]];
 /** Template ids that were renamed, so older CVs keep their look. */
 const RENAMED: Record<string, string> = { harvard: "collegiate" };
 
-export function getTemplate(id: string): TemplateDef {
+export const getTemplate = (id: string): TemplateDef => {
   const want = RENAMED[id] ?? id;
   return TEMPLATES.find((t) => t.id === want) ?? TEMPLATES[0];
-}
+};

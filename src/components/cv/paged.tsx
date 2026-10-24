@@ -1,30 +1,29 @@
 import {
-  type CSSProperties,
-  type ReactNode,
   useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import {
-  type Block,
   breaksOf,
   PAPER_SIZES,
-  type PageBreaks,
   paginate,
   resolveStyle,
-  type TemplateDef,
   typeAttrs,
   usedHeight,
 } from "#/lib/cv/engine";
+import type { Block, PageBreaks, TemplateDef } from "#/lib/cv/engine";
 import { fontFamily } from "#/lib/cv/fonts";
 import type { CV } from "#/lib/cv/schema";
 import { cn } from "#/lib/utils";
 
-import { type EditorApi, EditorContext, useEditor } from "./editing";
+import { EditorContext, useEditor } from "./editing";
+import type { EditorApi } from "./editing";
 
 interface Geometry {
   mainLeft: number;
@@ -33,7 +32,7 @@ interface Geometry {
   sideWidth: number;
 }
 
-function geometry(def: TemplateDef, padX: number, pageW: number): Geometry {
+const geometry = (def: TemplateDef, padX: number, pageW: number): Geometry => {
   if (!def.side) {
     return {
       mainLeft: padX,
@@ -50,9 +49,9 @@ function geometry(def: TemplateDef, padX: number, pageW: number): Geometry {
     sideLeft: left ? padX : pageW - side + padX,
     sideWidth: side - padX * 2,
   };
-}
+};
 
-function BlockBox({
+const BlockBox = ({
   block,
   gap,
   padX,
@@ -65,29 +64,42 @@ function BlockBox({
   pullTop?: number;
   /** Text size setting: zooms the block's content, never the gaps between blocks. */
   scale?: number;
-}) {
-  return (
-    <div
-      data-block={block.key}
-      style={{
-        display: "flow-root",
-        paddingTop: gap,
-        marginLeft: block.bleed ? -padX : undefined,
-        marginRight: block.bleed ? -padX : undefined,
-        marginTop: pullTop ? -pullTop : undefined,
-      }}
-    >
-      {scale === 1 ? (
-        block.node
-      ) : (
-        <div style={{ display: "flow-root", zoom: scale }}>{block.node}</div>
-      )}
-    </div>
-  );
-}
+}) => (
+  <div
+    data-block={block.key}
+    style={{
+      display: "flow-root",
+      paddingTop: gap,
+      marginLeft: block.bleed ? -padX : undefined,
+      marginRight: block.bleed ? -padX : undefined,
+      marginTop: pullTop ? -pullTop : undefined,
+    }}
+  >
+    {scale === 1 ? (
+      block.node
+    ) : (
+      <div style={{ display: "flow-root", zoom: scale }}>{block.node}</div>
+    )}
+  </div>
+);
 
-/** Renders blocks off-screen at their real column width and reports their heights. */
-function Measurer({
+const useFontsVersion = () => {
+  const [version, setVersion] = useState(0);
+  useEffect(() => {
+    const bump = () => setVersion((v) => v + 1);
+    document.fonts.ready.then(bump).catch(() => {
+      // Never rejects; the loadingdone listener covers later fonts anyway.
+    });
+    document.fonts.addEventListener("loadingdone", bump);
+    return () => document.fonts.removeEventListener("loadingdone", bump);
+  }, []);
+  return version;
+};
+
+const sameHeights = (a: number[] | null, b: number[]) =>
+  a !== null && a.length === b.length && a.every((h, i) => h === b[i]);
+
+const Measurer = ({
   blocks,
   width,
   padX,
@@ -96,7 +108,6 @@ function Measurer({
   sheetClassName,
   onMeasure,
   scale,
-  version,
 }: {
   blocks: Block[];
   width: number;
@@ -106,20 +117,27 @@ function Measurer({
   sheetClassName?: string;
   scale: number;
   onMeasure: (heights: number[]) => void;
-  version: number;
-}) {
+}) => {
+  // Loaded fonts change heights: the new state re-renders, so it re-measures.
+  useFontsVersion();
   const ref = useRef<HTMLDivElement>(null);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure whenever blocks, width or loaded fonts change
+  const last = useRef<number[] | null>(null);
+  // Measure after every render (blocks, width or loaded fonts may have
+  // changed); report only when the heights differ, so this settles.
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) {
       return;
     }
-    const heights = Array.from(el.children).map(
+    const heights = [...el.children].map(
       (c) => c.getBoundingClientRect().height
     );
+    if (sameHeights(last.current, heights)) {
+      return;
+    }
+    last.current = heights;
     onMeasure(heights);
-  }, [blocks, width, version]);
+  });
 
   return createPortal(
     <div
@@ -144,18 +162,78 @@ function Measurer({
     </div>,
     document.body
   );
-}
+};
 
-function useFontsVersion() {
-  const [version, setVersion] = useState(0);
-  useEffect(() => {
-    const bump = () => setVersion((v) => v + 1);
-    document.fonts.ready.then(bump);
-    document.fonts.addEventListener("loadingdone", bump);
-    return () => document.fonts.removeEventListener("loadingdone", bump);
-  }, []);
-  return version;
-}
+const noSubscribe = () => () => {
+  // Nothing to subscribe to: the value only differs between server and client.
+};
+
+/** False on the server and while hydrating, true in the browser after that. */
+const useMounted = () =>
+  useSyncExternalStore(
+    noSubscribe,
+    () => true,
+    () => false
+  );
+
+const Column = ({
+  blocks,
+  heights,
+  indexes,
+  left,
+  width,
+  pageIndex,
+  available,
+  forced,
+  padTop,
+  padX,
+  fontScale,
+}: {
+  blocks: Block[];
+  heights: number[] | null;
+  indexes: number[];
+  left: number;
+  width: number;
+  pageIndex: number;
+  available: number;
+  /** Pages break at fixed blocks (export), so a page may need to shrink. */
+  forced: boolean;
+  padTop: number;
+  padX: number;
+  fontScale: number;
+}) => {
+  // With forced breaks a page can come out a few px too tall (different font
+  // metrics on the export machine); shrink that page imperceptibly to fit.
+  const used = heights ? usedHeight(blocks, heights, indexes) : 0;
+  const fit = forced && used > available ? available / used : 1;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: padTop,
+        left,
+        width: width / fit,
+        transform: fit < 1 ? `scale(${fit})` : undefined,
+        transformOrigin: "top left",
+      }}
+    >
+      {indexes.map((i, n) => {
+        const b = blocks[i];
+        const pull = b.bleed && n === 0 && pageIndex === 0 ? padTop : 0;
+        return (
+          <BlockBox
+            block={b}
+            gap={n === 0 ? 0 : (b.gap ?? 0)}
+            key={b.key}
+            padX={padX}
+            pullTop={pull}
+            scale={fontScale}
+          />
+        );
+      })}
+    </div>
+  );
+};
 
 export interface PagedProps {
   /** Break pages exactly here (the editor's breaks, used for export). */
@@ -175,42 +253,24 @@ export interface PagedProps {
   renderSheet?: (sheet: ReactNode, index: number, count: number) => ReactNode;
 }
 
-/**
- * The CV as fixed A4 sheets. Blocks are measured off-screen and placed with
- * the same algorithm on screen and in the PDF, so both always match.
- */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one render function keeps measuring and placing visibly in sync
-export function PagedCv({
-  cv,
-  def,
-  editor,
-  renderSheet,
-  firstPageOnly,
-  onlyPage,
-  onReady,
+/** Splits the measured blocks into pages and reports breaks and page count. */
+const usePages = ({
+  layout,
+  mainH,
+  sideH,
+  available,
   breaks,
   onBreaks,
-}: PagedProps) {
-  const style = resolveStyle(def, cv);
-  const paper = PAPER_SIZES[style.paper];
-  const g = geometry(def, style.padX, paper.width);
-  const layout = useMemo(() => def.build(cv), [def, cv]);
-  const fonts = useFontsVersion();
-  const [mounted, setMounted] = useState(false);
-  const [mainH, setMainH] = useState<number[] | null>(null);
-  const [sideH, setSideH] = useState<number[] | null>(null);
-
-  useEffect(() => setMounted(true), []);
-
-  const type = typeAttrs(style);
-  const sheetStyle: CSSProperties = {
-    fontFamily: fontFamily(style.font),
-    ["--cv-accent" as string]: style.accent,
-    ["--cv-pad-x" as string]: `${style.padX}px`,
-    ...type.vars,
-  };
-  const available = paper.height - style.padTop - style.padBottom;
-
+  onReady,
+}: {
+  layout: { main: Block[]; side?: Block[] };
+  mainH: number[] | null;
+  sideH: number[] | null;
+  available: number;
+  breaks?: PageBreaks | null;
+  onBreaks?: (breaks: PageBreaks) => void;
+  onReady?: (pageCount: number) => void;
+}) => {
   const mainPages = useMemo(
     () =>
       mainH && mainH.length === layout.main.length
@@ -246,6 +306,46 @@ export function PagedCv({
       onReady?.(count);
     }
   }, [ready, count, onReady]);
+  return { mainPages, sidePages, ready, count };
+};
+
+export const PagedCv = ({
+  cv,
+  def,
+  editor,
+  renderSheet,
+  firstPageOnly,
+  onlyPage,
+  onReady,
+  breaks,
+  onBreaks,
+}: PagedProps) => {
+  const style = resolveStyle(def, cv);
+  const paper = PAPER_SIZES[style.paper];
+  const g = geometry(def, style.padX, paper.width);
+  const layout = useMemo(() => def.build(cv), [def, cv]);
+  const mounted = useMounted();
+  const [mainH, setMainH] = useState<number[] | null>(null);
+  const [sideH, setSideH] = useState<number[] | null>(null);
+
+  const type = typeAttrs(style);
+  const sheetStyle: CSSProperties = {
+    fontFamily: fontFamily(style.font),
+    ["--cv-accent" as string]: style.accent,
+    ["--cv-pad-x" as string]: `${style.padX}px`,
+    ...type.vars,
+  };
+  const available = paper.height - style.padTop - style.padBottom;
+
+  const { mainPages, sidePages, ready, count } = usePages({
+    layout,
+    mainH,
+    sideH,
+    available,
+    breaks,
+    onBreaks,
+    onReady,
+  });
 
   // The measuring copy uses the editor's look but is never interactive.
   const parent = useEditor();
@@ -254,46 +354,28 @@ export function PagedCv({
     [editor]
   );
 
-  const renderColumn = (
+  const column = (
     blocks: Block[],
     heights: number[] | null,
     indexes: number[],
     left: number,
     width: number,
     pageIndex: number
-  ) => {
-    // With forced breaks a page can come out a few px too tall (different font
-    // metrics on the export machine); shrink that page imperceptibly to fit.
-    const used = heights ? usedHeight(blocks, heights, indexes) : 0;
-    const fit = breaks && used > available ? available / used : 1;
-    return (
-      <div
-        style={{
-          position: "absolute",
-          top: style.padTop,
-          left,
-          width: width / fit,
-          transform: fit < 1 ? `scale(${fit})` : undefined,
-          transformOrigin: "top left",
-        }}
-      >
-        {indexes.map((i, n) => {
-          const b = blocks[i];
-          const pull = b.bleed && n === 0 && pageIndex === 0 ? style.padTop : 0;
-          return (
-            <BlockBox
-              block={b}
-              gap={n === 0 ? 0 : (b.gap ?? 0)}
-              key={b.key}
-              padX={style.padX}
-              pullTop={pull}
-              scale={style.fontScale}
-            />
-          );
-        })}
-      </div>
-    );
-  };
+  ) => (
+    <Column
+      available={available}
+      blocks={blocks}
+      fontScale={style.fontScale}
+      forced={Boolean(breaks)}
+      heights={heights}
+      indexes={indexes}
+      left={left}
+      padTop={style.padTop}
+      padX={style.padX}
+      pageIndex={pageIndex}
+      width={width}
+    />
+  );
 
   const sheets: ReactNode[] = [];
   if (ready) {
@@ -323,7 +405,7 @@ export function PagedCv({
               }}
             />
           ) : null}
-          {renderColumn(
+          {column(
             layout.main,
             mainH,
             mainPages?.[p] ?? [],
@@ -332,7 +414,7 @@ export function PagedCv({
             p
           )}
           {layout.side
-            ? renderColumn(
+            ? column(
                 layout.side,
                 sideH,
                 sidePages?.[p] ?? [],
@@ -359,7 +441,6 @@ export function PagedCv({
             sheetAttrs={type.attrs}
             sheetClassName={cn("text-[#1c1c1c]", def.sheetClassName)}
             sheetStyle={sheetStyle}
-            version={fonts}
             width={g.mainWidth}
           />
           {layout.side ? (
@@ -371,7 +452,6 @@ export function PagedCv({
               sheetAttrs={type.attrs}
               sheetClassName={cn("text-[#1c1c1c]", def.sheetClassName)}
               sheetStyle={sheetStyle}
-              version={fonts}
               width={g.sideWidth}
             />
           ) : null}
@@ -380,4 +460,4 @@ export function PagedCv({
       {sheets}
     </EditorContext.Provider>
   );
-}
+};

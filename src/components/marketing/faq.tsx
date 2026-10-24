@@ -1,7 +1,7 @@
 import { ArrowUp02Icon } from "@hugeicons-pro/core-stroke-rounded";
 import { useCallback, useId, useRef, useState } from "react";
-import { Icon } from "#/components/icon";
 
+import { Icon } from "#/components/icon";
 import { faqItems } from "#/components/marketing/faq-copy";
 import {
   Accordion,
@@ -22,7 +22,7 @@ type AskState =
   | { status: "done"; question: string; answer: string }
   | { status: "error"; question: string; message: string };
 
-function AskRow() {
+const AskRow = () => {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState("");
@@ -79,7 +79,7 @@ function AskRow() {
       <div aria-live="polite">
         <p
           className={cn(
-            "py-6 font-medium text-[18px] leading-snug tracking-[-0.01em] sm:py-7 sm:text-[22px]",
+            "py-6 text-[18px] leading-snug font-medium tracking-[-0.01em] sm:py-7 sm:text-[22px]",
             ROW_X
           )}
         >
@@ -92,15 +92,15 @@ function AskRow() {
           )}
         >
           {state.status === "loading" ? (
-            <div className="space-y-2.5 pt-1.5" role="status">
+            <output className="block space-y-2.5 pt-1.5">
               <span className="sr-only">{m.faq_ask_thinking()}</span>
-              <div className="h-3 w-[92%] animate-pulse rounded-full bg-foreground/[0.07]" />
-              <div className="h-3 w-[78%] animate-pulse rounded-full bg-foreground/[0.07]" />
-              <div className="h-3 w-[54%] animate-pulse rounded-full bg-foreground/[0.07]" />
-            </div>
+              <span className="bg-foreground/[0.07] block h-3 w-[92%] animate-pulse rounded-full" />
+              <span className="bg-foreground/[0.07] block h-3 w-[78%] animate-pulse rounded-full" />
+              <span className="bg-foreground/[0.07] block h-3 w-[54%] animate-pulse rounded-full" />
+            </output>
           ) : null}
           {state.status === "done" ? (
-            <p className="whitespace-pre-line text-muted-foreground">
+            <p className="text-muted-foreground whitespace-pre-line">
               {state.answer}
             </p>
           ) : null}
@@ -109,7 +109,7 @@ function AskRow() {
           ) : null}
           {state.status === "loading" ? null : (
             <button
-              className="mt-4 cursor-pointer text-[14px] text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+              className="text-muted-foreground hover:text-foreground mt-4 cursor-pointer text-[14px] underline-offset-4 transition-colors hover:underline"
               onClick={askAnother}
               type="button"
             >
@@ -128,7 +128,7 @@ function AskRow() {
       </label>
       <input
         autoComplete="off"
-        className="h-[76px] min-w-0 flex-1 bg-transparent font-medium text-[18px] text-foreground outline-none placeholder:text-muted-foreground/70 sm:h-[84px] sm:text-[22px]"
+        className="text-foreground placeholder:text-muted-foreground/70 h-[76px] min-w-0 flex-1 bg-transparent text-[18px] font-medium outline-none sm:h-[84px] sm:text-[22px]"
         id={inputId}
         maxLength={MAX_QUESTION}
         onChange={onChange}
@@ -139,7 +139,7 @@ function AskRow() {
       <button
         aria-label={m.faq_ask_submit()}
         className={cn(
-          "flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-foreground text-background transition-[opacity,scale] duration-150 ease-out active:scale-95",
+          "bg-foreground text-background flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-[opacity,scale] duration-150 ease-out active:scale-95",
           value.trim()
             ? "opacity-100"
             : "pointer-events-none scale-90 opacity-0"
@@ -150,45 +150,43 @@ function AskRow() {
       </button>
     </form>
   );
-}
+};
 
-export function Faq() {
-  return (
-    <section className="scroll-mt-24 pt-24 sm:pt-36" id="faq">
-      <div className="mx-auto max-w-[920px]">
-        <h2 className="text-balance font-semibold text-[38px] leading-[1.05] tracking-[-0.035em] sm:text-[56px]">
-          {m.faq_title()}
-        </h2>
-        <div className="mt-10 overflow-hidden rounded-[24px] border border-border bg-card shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_16px_rgba(0,0,0,0.03)] sm:mt-12">
-          <Accordion>
-            {faqItems().map((item) => (
-              <AccordionItem
-                className="border-border border-b"
-                key={item.q}
-                value={item.q}
+export const Faq = () => (
+  <section className="scroll-mt-24 pt-24 sm:pt-36" id="faq">
+    <div className="mx-auto max-w-[920px]">
+      <h2 className="text-[38px] leading-[1.05] font-semibold tracking-[-0.035em] text-balance sm:text-[56px]">
+        {m.faq_title()}
+      </h2>
+      <div className="border-border bg-card mt-10 overflow-hidden rounded-[24px] border shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_16px_rgba(0,0,0,0.03)] sm:mt-12">
+        <Accordion>
+          {faqItems().map((item) => (
+            <AccordionItem
+              className="border-border border-b"
+              key={item.q}
+              value={item.q}
+            >
+              <AccordionTrigger
+                className={cn(
+                  "**:data-[slot=accordion-trigger-icon]:text-muted-foreground items-center gap-6 rounded-none py-6 text-[18px] leading-snug font-medium tracking-[-0.01em] hover:no-underline focus-visible:ring-inset **:data-[slot=accordion-trigger-icon]:size-5 sm:py-7 sm:text-[22px]",
+                  ROW_X
+                )}
               >
-                <AccordionTrigger
-                  className={cn(
-                    "items-center gap-6 rounded-none py-6 font-medium text-[18px] leading-snug tracking-[-0.01em] hover:no-underline focus-visible:ring-inset **:data-[slot=accordion-trigger-icon]:size-5 **:data-[slot=accordion-trigger-icon]:text-muted-foreground sm:py-7 sm:text-[22px]",
-                    ROW_X
-                  )}
-                >
-                  {item.q}
-                </AccordionTrigger>
-                <AccordionContent
-                  className={cn(
-                    "-mt-1 max-w-[720px] in-data-starting-style:-translate-y-1 pb-7 text-[16px] text-muted-foreground leading-relaxed in-data-ending-style:opacity-0 in-data-starting-style:opacity-0 transition-[opacity,translate] duration-200 ease-out motion-reduce:in-data-starting-style:translate-y-0 sm:pe-24",
-                    ROW_X
-                  )}
-                >
-                  <p>{item.a}</p>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-          <AskRow />
-        </div>
+                {item.q}
+              </AccordionTrigger>
+              <AccordionContent
+                className={cn(
+                  "text-muted-foreground -mt-1 max-w-[720px] pb-7 text-[16px] leading-relaxed transition-[opacity,translate] duration-200 ease-out in-data-ending-style:opacity-0 in-data-starting-style:-translate-y-1 in-data-starting-style:opacity-0 motion-reduce:in-data-starting-style:translate-y-0 sm:pe-24",
+                  ROW_X
+                )}
+              >
+                <p>{item.a}</p>
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+        <AskRow />
       </div>
-    </section>
-  );
-}
+    </div>
+  </section>
+);

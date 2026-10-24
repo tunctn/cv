@@ -9,32 +9,27 @@ export const VERIFY_LIMIT = "VERIFY_LIMIT";
 
 export type LimitKind = "guest" | "verify";
 
-function messageOf(error: unknown) {
-  return error instanceof Error ? error.message : String(error ?? "");
-}
+const messageOf = (error: unknown) =>
+  error instanceof Error ? error.message : String(error ?? "");
 
-/** Which limit an error stands for, if any. */
-export function limitOf(error: unknown): LimitKind | null {
+export const limitOf = (error: unknown): LimitKind | null => {
   const message = messageOf(error);
   if (message.includes(VERIFY_LIMIT)) {
     return "verify";
   }
   return message.includes(GUEST_LIMIT) ? "guest" : null;
-}
+};
 
-export function isGuestLimit(error: unknown) {
-  return limitOf(error) !== null;
-}
+export const isGuestLimit = (error: unknown) => limitOf(error) !== null;
 
-/** Guests and unconfirmed accounts get the free limits; null means none. */
-export function limitKindFor(user: {
+export const limitKindFor = (user: {
   isAnonymous?: boolean | null;
   emailVerified?: boolean | null;
-}): LimitKind | null {
+}): LimitKind | null => {
   if (user.isAnonymous) {
     return "guest";
   }
   return user.emailVerified ? null : "verify";
-}
+};
 /** Cookie holding the browser's visitor id (set for guests). */
 export const DEVICE_COOKIE = "cv_vid";

@@ -5,15 +5,13 @@ import { usageNumbers } from "#/lib/server/ai-usage";
 
 const ARGS_MAX = 400;
 /** OpenAI's inline citation markers (private-use characters). */
-const CITATIONS = /\uE200[^\uE201]*\uE201/g;
+const CITATIONS = /\uE200[^\uE201]*\uE201/gu;
 
-/** Model text without citation markers. */
-export function cleanText(text: string) {
-  return text.replace(CITATIONS, "").trim();
-}
+export const cleanText = (text: string) =>
+  text.replaceAll(CITATIONS, "").trim();
 const URLS_MAX = 10;
 
-function shortJson(value: unknown) {
+const shortJson = (value: unknown) => {
   try {
     const text = JSON.stringify(value) as string | undefined;
     if (!text) {
@@ -23,15 +21,27 @@ function shortJson(value: unknown) {
   } catch {
     return "";
   }
-}
+};
 
 interface WebSearchOutput {
   action?: { type?: string; query?: string; queries?: string[]; url?: string };
   sources?: { type: string; url?: string }[];
 }
 
-/** One step of a reply, for the admin detail view. */
-export function stepDetail(step: StepResult<ToolSet>): UsageStepDetail {
+const searchOf = (output: unknown) => {
+  const out = (output ?? {}) as WebSearchOutput;
+  const query =
+    out.action?.queries?.join(" · ") ??
+    out.action?.query ??
+    out.action?.url ??
+    undefined;
+  const urls = (out.sources ?? [])
+    .map((s) => s.url)
+    .filter((u): u is string => Boolean(u));
+  return { query, urls: urls.slice(0, URLS_MAX) };
+};
+
+export const stepDetail = (step: StepResult<ToolSet>): UsageStepDetail => {
   const tools: UsageStepDetail["tools"] = [];
   const searches: UsageStepDetail["searches"] = [];
   for (const call of step.toolCalls) {
@@ -57,16 +67,7 @@ export function stepDetail(step: StepResult<ToolSet>): UsageStepDetail {
     if (result.toolName !== "web_search") {
       continue;
     }
-    const out = (result.output ?? {}) as WebSearchOutput;
-    const query =
-      out.action?.queries?.join(" · ") ??
-      out.action?.query ??
-      out.action?.url ??
-      undefined;
-    const urls = (out.sources ?? [])
-      .map((s) => s.url)
-      .filter((u): u is string => Boolean(u));
-    searches.push({ query, urls: urls.slice(0, URLS_MAX) });
+    searches.push(searchOf(result.output));
   }
   // Searches the SDK reported only as calls (no result part) still count.
   const searchCalls = step.toolCalls.filter(
@@ -85,11 +86,10 @@ export function stepDetail(step: StepResult<ToolSet>): UsageStepDetail {
     searches,
     text: cleanText(step.text) || undefined,
   };
-}
+};
 
-/** The last user message's text and attachment names. */
-export function promptOf(messages: UIMessage[]) {
-  const last = [...messages].reverse().find((msg) => msg.role === "user");
+export const promptOf = (messages: UIMessage[]) => {
+  const last = messages.findLast((msg) => msg.role === "user");
   if (!last) {
     return { prompt: undefined, attachments: [] as string[] };
   }
@@ -103,4 +103,4 @@ export function promptOf(messages: UIMessage[]) {
     )
     .filter((n): n is string => Boolean(n));
   return { prompt: text || undefined, attachments };
-}
+};

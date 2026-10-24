@@ -1,4 +1,5 @@
 import { m } from "#/paraglide/messages.js";
+
 import type { TemplateCategory, TemplateDef } from "../engine";
 
 /** Template names and descriptions in the visitor's language. */
@@ -58,13 +59,10 @@ const DESCRIPTIONS: Record<string, () => string> = {
   startup: m.template_desc_startup,
 };
 
-export function templateName(def: TemplateDef) {
-  return NAMES[def.id]?.() ?? def.name;
-}
+export const templateName = (def: TemplateDef) => NAMES[def.id]?.() ?? def.name;
 
-export function templateDescription(def: TemplateDef) {
-  return DESCRIPTIONS[def.id]?.() ?? def.description;
-}
+export const templateDescription = (def: TemplateDef) =>
+  DESCRIPTIONS[def.id]?.() ?? def.description;
 
 const CATEGORY_LABELS: Record<TemplateCategory | "all", () => string> = {
   all: m.template_cat_all,
@@ -76,7 +74,5 @@ const CATEGORY_LABELS: Record<TemplateCategory | "all", () => string> = {
   student: m.template_cat_student,
 };
 
-/** Localised name of a template category ("all" for the unfiltered list). */
-export function categoryLabel(category: TemplateCategory | "all") {
-  return CATEGORY_LABELS[category]();
-}
+export const categoryLabel = (category: TemplateCategory | "all") =>
+  CATEGORY_LABELS[category]();

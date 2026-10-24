@@ -1,4 +1,5 @@
-import { type PointerEvent, useCallback, useState } from "react";
+import { useCallback, useState } from "react";
+import type { PointerEvent } from "react";
 
 import { fmtUsd } from "#/components/admin/ui";
 import { cn } from "#/lib/utils";
@@ -23,16 +24,14 @@ const SERIES = [
   { key: "faq", label: m.admin_kind_faq, color: "var(--chart-faq)" },
 ] as const;
 
-function dayLabel(day: string) {
-  return new Date(`${day}T00:00:00Z`).toLocaleDateString(getLocale(), {
+const dayLabel = (day: string) =>
+  new Date(`${day}T00:00:00Z`).toLocaleDateString(getLocale(), {
     day: "numeric",
     month: "short",
     timeZone: "UTC",
   });
-}
 
-/** Stacked daily AI cost over the last 30 days, with a hover readout. */
-export function CostChart({ days }: { days: CostDay[] }) {
+export const CostChart = ({ days }: { days: CostDay[] }) => {
   const [hover, setHover] = useState<number | null>(null);
   const totals = days.map((x) => x.chat + x.translate + x.faq);
   const max = Math.max(...totals, 0.0001);
@@ -49,15 +48,15 @@ export function CostChart({ days }: { days: CostDay[] }) {
     <div className="flex flex-col gap-4 p-4 [--chart-chat:oklch(0.55_0.17_265)] [--chart-faq:oklch(0.75_0.13_75)] [--chart-translate:oklch(0.68_0.13_185)]">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <div className="flex items-baseline gap-2">
-          <span className="font-semibold text-[20px] tabular-nums">
+          <span className="text-[20px] font-semibold tabular-nums">
             {fmtUsd(totals[active] ?? 0)}
           </span>
-          <span className="text-[13px] text-muted-foreground">
+          <span className="text-muted-foreground text-[13px]">
             {d ? dayLabel(d.day) : ""}
             {d ? ` · ${m.admin_requests_count({ count: d.requests })}` : ""}
           </span>
         </div>
-        <div className="flex flex-wrap gap-3 text-[12.5px] text-muted-foreground">
+        <div className="text-muted-foreground flex flex-wrap gap-3 text-[12.5px]">
           {SERIES.map((s) => (
             <span className="flex items-center gap-1.5" key={s.key}>
               <span
@@ -106,24 +105,23 @@ export function CostChart({ days }: { days: CostDay[] }) {
           </div>
         ))}
       </div>
-      <div className="flex justify-between text-[12px] text-muted-foreground">
+      <div className="text-muted-foreground flex justify-between text-[12px]">
         <span>{days[0] ? dayLabel(days[0].day) : ""}</span>
         <span>{days.at(-1) ? dayLabel(days.at(-1)?.day ?? "") : ""}</span>
       </div>
     </div>
   );
-}
+};
 
-/** Daily sign-ups, guests and registered side by side, as a small bar strip. */
-export function SignupChart({
+export const SignupChart = ({
   days,
 }: {
   days: { day: string; guests: number; registered: number }[];
-}) {
+}) => {
   const max = Math.max(...days.map((d) => d.guests + d.registered), 1);
   return (
     <div className="flex flex-col gap-3 p-4 [--chart-guest:oklch(0.8_0.02_265)] [--chart-reg:oklch(0.55_0.17_265)]">
-      <div className="flex gap-3 text-[12.5px] text-muted-foreground">
+      <div className="text-muted-foreground flex gap-3 text-[12.5px]">
         <span className="flex items-center gap-1.5">
           <span className="size-2 rounded-[3px] bg-[var(--chart-reg)]" />
           {m.admin_registered()}
@@ -164,4 +162,4 @@ export function SignupChart({
       </div>
     </div>
   );
-}
+};

@@ -1,8 +1,5 @@
-import {
-  defineCustomClientStrategy,
-  isLocale,
-  type Locale,
-} from "#/paraglide/runtime.js";
+import { defineCustomClientStrategy, isLocale } from "#/paraglide/runtime.js";
+import type { Locale } from "#/paraglide/runtime.js";
 
 /**
  * Mirrors the server's pick into the client: the server render writes the
@@ -72,6 +69,5 @@ export const ENGLISH_NAMES: Record<Locale, string> = {
 
 const RTL = new Set<Locale>(["ar"]);
 
-export function textDirection(locale: Locale): "rtl" | "ltr" {
-  return RTL.has(locale) ? "rtl" : "ltr";
-}
+export const textDirection = (locale: Locale): "rtl" | "ltr" =>
+  RTL.has(locale) ? "rtl" : "ltr";

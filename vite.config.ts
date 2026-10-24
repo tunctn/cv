@@ -1,32 +1,24 @@
 import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import tailwindcss from "@tailwindcss/vite";
 import { devtools } from "@tanstack/devtools-vite";
-
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
-
 import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig } from "vite";
+import type { Plugin } from "vite";
 
-/**
- * Dev only: Nitro's dev server treats any request the browser makes for an
- * image as a static asset, so <img src="/api/avatar/…"> never reached our
- * API routes locally (production is fine). Drop that hint for /api/ paths.
- */
-function apiImagesInDev(): Plugin {
-  return {
-    name: "api-images-in-dev",
-    apply: "serve",
-    configureServer(server) {
-      server.middlewares.use((req, _res, next) => {
-        if (req.url?.startsWith("/api/")) {
-          req.headers["sec-fetch-dest"] = undefined;
-        }
-        next();
-      });
-    },
-  };
-}
+const apiImagesInDev = (): Plugin => ({
+  name: "api-images-in-dev",
+  apply: "serve",
+  configureServer(server) {
+    server.middlewares.use((req, _res, next) => {
+      if (req.url?.startsWith("/api/")) {
+        req.headers["sec-fetch-dest"] = undefined;
+      }
+      next();
+    });
+  },
+});
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
@@ -35,7 +27,7 @@ const config = defineConfig({
   define: {
     __BUILD_ID__: JSON.stringify(
       process.env.SOURCE_COMMIT?.slice(0, 7) ||
-        new Date().toISOString().replace(/[-:]/g, "").slice(0, 15)
+        new Date().toISOString().replaceAll(/[-:]/gu, "").slice(0, 15)
     ),
   },
   plugins: [
@@ -52,7 +44,7 @@ const config = defineConfig({
       strategy: ["cookie", "custom-html", "preferredLanguage", "baseLocale"],
     }),
     apiImagesInDev(),
-    nitro({ rollupConfig: { external: [/^@sentry\//] } }),
+    nitro({ rollupConfig: { external: [/^@sentry\//u] } }),
     tailwindcss(),
     tanstackStart({
       // Moved off the default "/_serverFn" once: browsers had cached some

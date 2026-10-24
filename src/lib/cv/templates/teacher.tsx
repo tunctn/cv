@@ -2,7 +2,9 @@ import type { ReactNode } from "react";
 
 import { E, Sel } from "#/components/cv/editing";
 import { m } from "#/paraglide/messages.js";
-import { type Block, resolveStyle, type TemplateDef } from "../engine";
+
+import { resolveStyle } from "../engine";
+import type { Block, TemplateDef } from "../engine";
 import type { CustomSection, CV, SectionKey } from "../schema";
 import {
   Contacts,
@@ -21,16 +23,14 @@ const DATES =
   "shrink-0 whitespace-nowrap text-right text-[11.4px] text-[#8a7a72] italic";
 const SOFT = "text-[#5b4d47]";
 
-function Head({ left, right }: { left: ReactNode; right?: ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-between gap-5">
-      <div className="min-w-0">{left}</div>
-      {right}
-    </div>
-  );
-}
+const Head = ({ left, right }: { left: ReactNode; right?: ReactNode }) => (
+  <div className="flex items-baseline justify-between gap-5">
+    <div className="min-w-0">{left}</div>
+    {right}
+  </div>
+);
 
-function Bullets({ list, items }: { list: string; items: string[] }) {
+const Bullets = ({ list, items }: { list: string; items: string[] }) => {
   if (items.length === 0) {
     return null;
   }
@@ -40,7 +40,7 @@ function Bullets({ list, items }: { list: string; items: string[] }) {
         <Sel
           as="li"
           className="relative pl-[16px]"
-          // biome-ignore lint/suspicious/noArrayIndexKey: bullets are plain strings; position is their identity
+          // oxlint-disable-next-line react/no-array-index-key -- bullets are plain strings; position is their identity
           key={j}
           label={m.cv_sel_bullet()}
           list={list}
@@ -57,41 +57,37 @@ function Bullets({ list, items }: { list: string; items: string[] }) {
       ))}
     </ul>
   );
-}
+};
 
-function Description({ p, value }: { p: string; value: string }) {
-  return (
-    <Show path={p} value={value}>
-      <p className="mt-[4px] text-[#3a302c]">
-        <E
-          multiline
-          path={`${p}.description`}
-          placeholder={m.cv_ph_description()}
-          rich
-          value={value}
-        />
-      </p>
-    </Show>
-  );
-}
+const Description = ({ p, value }: { p: string; value: string }) => (
+  <Show path={p} value={value}>
+    <p className="mt-[4px] text-[#3a302c]">
+      <E
+        multiline
+        path={`${p}.description`}
+        placeholder={m.cv_ph_description()}
+        rich
+        value={value}
+      />
+    </p>
+  </Show>
+);
 
-function Place({ p, value }: { p: string; value: string }) {
-  return (
-    <Show path={p} value={value}>
-      <span>
-        {", "}
-        <E
-          path={`${p}.location`}
-          placeholder={m.cv_ph_location()}
-          value={value}
-        />
-      </span>
-    </Show>
-  );
-}
+const Place = ({ p, value }: { p: string; value: string }) => (
+  <Show path={p} value={value}>
+    <span>
+      {", "}
+      <E
+        path={`${p}.location`}
+        placeholder={m.cv_ph_location()}
+        value={value}
+      />
+    </span>
+  </Show>
+);
 
-function experienceBlocks(cv: CV): Block[] {
-  return cv.experience.map((e, i) => {
+const experienceBlocks = (cv: CV): Block[] =>
+  cv.experience.map((e, i) => {
     const p = `experience.${i}`;
     return {
       key: e.id,
@@ -100,7 +96,7 @@ function experienceBlocks(cv: CV): Block[] {
         <Sel label={m.cv_sel_job()} list="experience" path={p}>
           <Head
             left={
-              <p className="font-semibold text-[#2a211e] text-[13.4px]">
+              <p className="text-[13.4px] font-semibold text-[#2a211e]">
                 <E
                   path={`${p}.role`}
                   placeholder={m.cv_ph_job_title()}
@@ -128,19 +124,13 @@ function experienceBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-/** Qualifications as soft cards, so they stand out on a teaching CV. */
-function Card({ children }: { children: ReactNode }) {
-  return (
-    <div className={`rounded-[10px] ${TINT} px-[14px] py-[10px]`}>
-      {children}
-    </div>
-  );
-}
+const Card = ({ children }: { children: ReactNode }) => (
+  <div className={`rounded-[10px] ${TINT} px-[14px] py-[10px]`}>{children}</div>
+);
 
-function educationBlocks(cv: CV): Block[] {
-  return cv.education.map((e, i) => {
+const educationBlocks = (cv: CV): Block[] =>
+  cv.education.map((e, i) => {
     const p = `education.${i}`;
     return {
       key: e.id,
@@ -150,7 +140,7 @@ function educationBlocks(cv: CV): Block[] {
           <Card>
             <Head
               left={
-                <p className="font-semibold text-[#2a211e] text-[13.4px]">
+                <p className="text-[13.4px] font-semibold text-[#2a211e]">
                   <E
                     path={`${p}.degree`}
                     placeholder={m.cv_ph_degree()}
@@ -183,10 +173,9 @@ function educationBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function skillBlocks(cv: CV): Block[] {
-  return cv.skills.map((s, i) => {
+const skillBlocks = (cv: CV): Block[] =>
+  cv.skills.map((s, i) => {
     const p = `skills.${i}`;
     return {
       key: s.id,
@@ -224,10 +213,9 @@ function skillBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function projectBlocks(cv: CV): Block[] {
-  return cv.projects.map((pr, i) => {
+const projectBlocks = (cv: CV): Block[] =>
+  cv.projects.map((pr, i) => {
     const p = `projects.${i}`;
     return {
       key: pr.id,
@@ -236,7 +224,7 @@ function projectBlocks(cv: CV): Block[] {
         <Sel label={m.cv_sel_project()} list="projects" path={p}>
           <Head
             left={
-              <p className="font-semibold text-[#2a211e] text-[13.4px]">
+              <p className="text-[13.4px] font-semibold text-[#2a211e]">
                 <E
                   path={`${p}.name`}
                   placeholder={m.cv_ph_project_name()}
@@ -262,28 +250,24 @@ function projectBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function languageBlocks(cv: CV): Block[] {
-  return [
-    {
-      key: "languages",
-      gap: 12,
-      node: (
-        <InlineLanguages
-          className="text-[#3a302c]"
-          cv={cv}
-          levelClassName="text-[#8a7a72]"
-          separator={<span className="mx-[8px] text-[#d6c7bf]">·</span>}
-        />
-      ),
-    },
-  ];
-}
+const languageBlocks = (cv: CV): Block[] => [
+  {
+    key: "languages",
+    gap: 12,
+    node: (
+      <InlineLanguages
+        className="text-[#3a302c]"
+        cv={cv}
+        levelClassName="text-[#8a7a72]"
+        separator={<span className="mx-[8px] text-[#d6c7bf]">·</span>}
+      />
+    ),
+  },
+];
 
-/** Certificates, training and the like: also cards, like the education entries. */
-function customBlocks(section: CustomSection, list: string): Block[] {
-  return section.items.map((it, i) => {
+const customBlocks = (section: CustomSection, list: string): Block[] =>
+  section.items.map((it, i) => {
     const p = `${list}.items.${i}`;
     return {
       key: it.id,
@@ -293,7 +277,7 @@ function customBlocks(section: CustomSection, list: string): Block[] {
           <Card>
             <Head
               left={
-                <p className="font-semibold text-[#2a211e] text-[13.4px]">
+                <p className="text-[13.4px] font-semibold text-[#2a211e]">
                   <E
                     path={`${p}.title`}
                     placeholder={m.cv_ph_title()}
@@ -332,7 +316,6 @@ function customBlocks(section: CustomSection, list: string): Block[] {
       ),
     };
   });
-}
 
 const SECTION_BLOCKS: Record<SectionKey, (cv: CV) => Block[]> = {
   experience: experienceBlocks,
@@ -342,18 +325,15 @@ const SECTION_BLOCKS: Record<SectionKey, (cv: CV) => Block[]> = {
   languages: languageBlocks,
 };
 
-/** A friendly heading: a soft dot, the title, then a dotted line. */
-function Heading({ children }: { children: ReactNode }) {
-  return (
-    <h2 className="flex items-center gap-[10px] font-semibold text-[17px] text-[var(--cv-accent)] leading-[1.3]">
-      <span className="h-[10px] w-[10px] shrink-0 rounded-full bg-[color-mix(in_srgb,var(--cv-accent)_30%,white)] ring-[3px] ring-[color-mix(in_srgb,var(--cv-accent)_10%,white)]" />
-      <span>{children}</span>
-      <span className="mt-[4px] h-0 flex-1 border-[color-mix(in_srgb,var(--cv-accent)_30%,white)] border-b-[1.5px] border-dotted" />
-    </h2>
-  );
-}
+const Heading = ({ children }: { children: ReactNode }) => (
+  <h2 className="flex items-center gap-[10px] text-[17px] leading-[1.3] font-semibold text-[var(--cv-accent)]">
+    <span className="h-[10px] w-[10px] shrink-0 rounded-full bg-[color-mix(in_srgb,var(--cv-accent)_30%,white)] ring-[3px] ring-[color-mix(in_srgb,var(--cv-accent)_10%,white)]" />
+    <span>{children}</span>
+    <span className="mt-[4px] h-0 flex-1 border-b-[1.5px] border-dotted border-[color-mix(in_srgb,var(--cv-accent)_30%,white)]" />
+  </h2>
+);
 
-function Band({ cv, padX }: { cv: CV; padX: number }) {
+const Band = ({ cv, padX }: { cv: CV; padX: number }) => {
   const b = cv.basics;
   return (
     <Sel className={TINT} label={m.cv_sel_details()} path="basics">
@@ -368,7 +348,7 @@ function Band({ cv, padX }: { cv: CV; padX: number }) {
           width={96}
         />
         <div className="min-w-0">
-          <h1 className="font-semibold text-[#2a211e] text-[31px] leading-[1.12]">
+          <h1 className="text-[31px] leading-[1.12] font-semibold text-[#2a211e]">
             <E
               path="basics.name"
               placeholder={m.cv_ph_your_name()}
@@ -385,7 +365,7 @@ function Band({ cv, padX }: { cv: CV; padX: number }) {
             </p>
           </Show>
           <Contacts
-            className="mt-[10px] flex flex-wrap gap-x-[16px] gap-y-[2px] text-[#5b4d47] text-[11.6px]"
+            className="mt-[10px] flex flex-wrap gap-x-[16px] gap-y-[2px] text-[11.6px] text-[#5b4d47]"
             cv={cv}
             itemClassName="min-w-0 break-words"
           />
@@ -393,7 +373,7 @@ function Band({ cv, padX }: { cv: CV; padX: number }) {
       </div>
     </Sel>
   );
-}
+};
 
 /**
  * Warm and approachable, for teachers and educators: a soft header band,
@@ -445,23 +425,25 @@ export const teacher: TemplateDef = {
       });
     }
     for (const key of orderedSections(cv)) {
-      blocks.push({
-        key: `title-${key}`,
-        gap: 26,
-        keepWithNext: true,
-        node: (
-          <Sel
-            label={m.cv_sel_section()}
-            list="sections"
-            path={`sections.${key}`}
-          >
-            <Heading>
-              <E placeholder={m.cv_ph_section()} {...sectionLabel(cv, key)} />
-            </Heading>
-          </Sel>
-        ),
-      });
-      blocks.push(...sectionBlocks(cv, key, SECTION_BLOCKS, customBlocks));
+      blocks.push(
+        {
+          key: `title-${key}`,
+          gap: 26,
+          keepWithNext: true,
+          node: (
+            <Sel
+              label={m.cv_sel_section()}
+              list="sections"
+              path={`sections.${key}`}
+            >
+              <Heading>
+                <E placeholder={m.cv_ph_section()} {...sectionLabel(cv, key)} />
+              </Heading>
+            </Sel>
+          ),
+        },
+        ...sectionBlocks(cv, key, SECTION_BLOCKS, customBlocks)
+      );
     }
     return { main: blocks };
   },

@@ -9,10 +9,9 @@
  *   ... node scripts/translate-messages.mjs --force faq_a5,cta_body
  */
 import { readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import nodePath from "node:path";
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const root = nodePath.join(import.meta.dirname, "..");
 const MODEL = process.env.OPENAI_MODEL || "gpt-5.4-mini";
 const KEY = process.env.OPENAI_API_KEY;
 
@@ -63,7 +62,7 @@ Rules:
 - Keep typographic quotes and ellipses (…) in the local style.
 - Return only JSON: an object with exactly the same keys and the translated strings as values.`;
 
-function parseArgs(argv) {
+const parseArgs = (argv) => {
   const at = argv.indexOf("--force");
   if (at === -1) {
     return { locales: argv, force: [] };
@@ -72,17 +71,17 @@ function parseArgs(argv) {
     locales: [...argv.slice(0, at), ...argv.slice(at + 2)],
     force: (argv[at + 1] ?? "").split(",").filter(Boolean),
   };
-}
+};
 
-async function readJson(path) {
+const readJson = async (path) => {
   try {
-    return JSON.parse(await readFile(path, "utf8"));
+    return JSON.parse(await readFile(path, "utf-8"));
   } catch {
     return {};
   }
-}
+};
 
-async function translate(locale, entries) {
+const translate = async (locale, entries) => {
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -102,29 +101,29 @@ async function translate(locale, entries) {
     }),
   });
   if (!res.ok) {
-    throw new Error(
-      `OpenAI ${res.status}: ${(await res.text()).slice(0, 300)}`
-    );
+    const body = await res.text();
+    throw new Error(`OpenAI ${res.status}: ${body.slice(0, 300)}`);
   }
   const data = await res.json();
   return JSON.parse(data.choices[0].message.content);
-}
+};
 
-function placeholders(s) {
-  return [...s.matchAll(/\{[a-zA-Z_]+\}/g)]
+const placeholders = (s) =>
+  [...s.matchAll(/\{[a-zA-Z_]+\}/gu)]
     .map((x) => x[0])
-    .sort()
-    .join();
-}
+    .toSorted()
+    .join(",");
 
-async function main() {
+const main = async () => {
   if (!KEY) {
     console.error("Set OPENAI_API_KEY.");
     process.exit(1);
   }
   const { locales: only, force } = parseArgs(process.argv.slice(2));
-  const settings = await readJson(join(root, "project.inlang/settings.json"));
-  const en = await readJson(join(root, "messages/en.json"));
+  const settings = await readJson(
+    nodePath.join(root, "project.inlang/settings.json")
+  );
+  const en = await readJson(nodePath.join(root, "messages/en.json"));
   const keys = Object.keys(en).filter((k) => k !== "$schema");
   const targets = settings.locales.filter(
     (l) => l !== settings.baseLocale && (only.length === 0 || only.includes(l))
@@ -132,7 +131,7 @@ async function main() {
 
   await Promise.all(
     targets.map(async (locale) => {
-      const path = join(root, `messages/${locale}.json`);
+      const path = nodePath.join(root, `messages/${locale}.json`);
       const current = await readJson(path);
       const missing = keys.filter(
         (k) => typeof current[k] !== "string" || force.includes(k)
@@ -167,6 +166,6 @@ async function main() {
       console.log(`${locale}: ${done}/${missing.length} translated`);
     })
   );
-}
+};
 
 await main();

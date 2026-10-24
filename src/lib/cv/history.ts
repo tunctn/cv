@@ -51,18 +51,16 @@ export type TimelineAction<D> =
 /** Typing pauses longer than this start a new step. */
 export const TYPING_WINDOW_MS = 1200;
 
-export function createTimeline<D>(
+export const createTimeline = <D>(
   versions: Version<D>[],
   cursor = versions.length - 1
-): Timeline<D> {
-  return { versions, cursor, open: null };
-}
+): Timeline<D> => ({ versions, cursor, open: null });
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one case per action, kept together so the rules are easy to audit
-export function timelineReducer<D>(
+// oxlint-disable-next-line complexity -- one case per action, kept together so the rules are easy to audit
+export const timelineReducer = <D>(
   state: Timeline<D>,
   action: TimelineAction<D>
-): Timeline<D> {
+): Timeline<D> => {
   switch (action.type) {
     case "commit": {
       const current = state.versions[state.cursor];
@@ -86,7 +84,7 @@ export function timelineReducer<D>(
         open?.key === meta.group &&
         now - open.at < windowMs
       ) {
-        const versions = state.versions.slice();
+        const versions = [...state.versions];
         versions[state.cursor] = { ...current, doc, at: now };
         return { ...state, versions, open: { key: meta.group, at: now } };
       }
@@ -104,14 +102,16 @@ export function timelineReducer<D>(
         open: meta.group ? { key: meta.group, at: now } : null,
       };
     }
-    case "undo":
+    case "undo": {
       return state.cursor > 0
         ? { ...state, cursor: state.cursor - 1, open: null }
         : state;
-    case "redo":
+    }
+    case "redo": {
       return state.cursor < state.versions.length - 1
         ? { ...state, cursor: state.cursor + 1, open: null }
         : state;
+    }
     case "jump": {
       const index = Math.max(
         0,
@@ -121,8 +121,9 @@ export function timelineReducer<D>(
         ? state
         : { ...state, cursor: index, open: null };
     }
-    case "seal":
+    case "seal": {
       return state.open ? { ...state, open: null } : state;
+    }
     case "prepend": {
       const known = new Set(state.versions.map((v) => v.id));
       const older = action.versions.filter((v) => !known.has(v.id));
@@ -134,18 +135,18 @@ export function timelineReducer<D>(
             cursor: state.cursor + older.length,
           };
     }
-    default:
+    default: {
       return state;
+    }
   }
-}
+};
 
-/** Paths of leaves that differ between two JSON values (stops at `limit`). */
-export function changedPaths(
+export const changedPaths = (
   a: unknown,
   b: unknown,
   limit = 8,
   prefix = ""
-): string[] {
+): string[] => {
   if (a === b) {
     return [];
   }
@@ -180,29 +181,9 @@ export function changedPaths(
     }
   }
   return out;
-}
+};
 
-/**
- * Changes to the same field(s) in quick succession, like typing or dragging
- * a slider, merge into one undo step. Structural changes (adding, removing,
- * moving items) always stand alone.
- */
-export function editGroup(paths: string[], a: unknown, b: unknown) {
-  if (paths.length === 0 || paths.length > 4) {
-    return;
-  }
-  for (const path of paths) {
-    const before = valueAt(a, path);
-    const after = valueAt(b, path);
-    const leaf = (v: unknown) => v === undefined || typeof v !== "object";
-    if (!(leaf(before) && leaf(after))) {
-      return;
-    }
-  }
-  return `edit:${[...paths].sort().join(",")}`;
-}
-
-function valueAt(root: unknown, path: string): unknown {
+const valueAt = (root: unknown, path: string): unknown => {
   let cur = root;
   for (const k of path.split(".")) {
     if (cur === null || typeof cur !== "object") {
@@ -211,4 +192,20 @@ function valueAt(root: unknown, path: string): unknown {
     cur = (cur as Record<string, unknown>)[k];
   }
   return cur;
-}
+};
+
+const isLeaf = (v: unknown) => v === undefined || typeof v !== "object";
+
+export const editGroup = (paths: string[], a: unknown, b: unknown) => {
+  if (paths.length === 0 || paths.length > 4) {
+    return;
+  }
+  for (const path of paths) {
+    const before = valueAt(a, path);
+    const after = valueAt(b, path);
+    if (!(isLeaf(before) && isLeaf(after))) {
+      return;
+    }
+  }
+  return `edit:${paths.toSorted().join(",")}`;
+};

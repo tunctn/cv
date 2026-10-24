@@ -1,13 +1,9 @@
 import { E, Sel, useEditor } from "#/components/cv/editing";
 import { m } from "#/paraglide/messages.js";
+
 import type { Block, TemplateDef } from "../engine";
-import {
-  type CustomSection,
-  type CV,
-  isCustomKey,
-  type OrderKey,
-  type SectionKey,
-} from "../schema";
+import { isCustomKey } from "../schema";
+import type { CustomSection, CV, OrderKey, SectionKey } from "../schema";
 import {
   Contacts,
   DateRange,
@@ -20,10 +16,10 @@ import {
   useExpanded,
 } from "./kit";
 
-const WHITESPACE = /\s+/;
-const SIDE: SectionKey[] = ["skills", "languages", "education"];
+const WHITESPACE = /\s+/u;
+const SIDE = new Set<SectionKey>(["skills", "languages", "education"]);
 
-function Avatar({ cv }: { cv: CV }) {
+const Avatar = ({ cv }: { cv: CV }) => {
   const ed = useEditor();
   const expanded = useExpanded("basics");
   if (cv.basics.photo || (ed && expanded)) {
@@ -37,13 +33,13 @@ function Avatar({ cv }: { cv: CV }) {
     .slice(0, 2)
     .join("");
   return (
-    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--cv-accent)] font-semibold text-[24px] text-white">
+    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--cv-accent)] text-[24px] font-semibold text-white">
       {initials}
     </div>
   );
-}
+};
 
-function Bullets({ list, items }: { list: string; items: string[] }) {
+const Bullets = ({ list, items }: { list: string; items: string[] }) => {
   if (items.length === 0) {
     return null;
   }
@@ -52,7 +48,7 @@ function Bullets({ list, items }: { list: string; items: string[] }) {
       {items.map((h, j) => (
         <Sel
           as="li"
-          // biome-ignore lint/suspicious/noArrayIndexKey: bullets are plain strings; position is their identity
+          // oxlint-disable-next-line react/no-array-index-key -- bullets are plain strings; position is their identity
           key={j}
           label={m.cv_sel_bullet()}
           list={list}
@@ -68,44 +64,40 @@ function Bullets({ list, items }: { list: string; items: string[] }) {
       ))}
     </ul>
   );
-}
+};
 
-function Description({ p, value }: { p: string; value: string }) {
-  return (
-    <Show path={p} value={value}>
-      <p className="mt-1 text-[#333]">
-        <E
-          multiline
-          path={`${p}.description`}
-          placeholder={m.cv_ph_description()}
-          rich
-          value={value}
-        />
-      </p>
-    </Show>
-  );
-}
+const Description = ({ p, value }: { p: string; value: string }) => (
+  <Show path={p} value={value}>
+    <p className="mt-1 text-[#333]">
+      <E
+        multiline
+        path={`${p}.description`}
+        placeholder={m.cv_ph_description()}
+        rich
+        value={value}
+      />
+    </p>
+  </Show>
+);
 
-function Title({ cv, k, side }: { cv: CV; k: OrderKey; side?: boolean }) {
-  return (
-    <Sel label={m.cv_sel_section()} list="sections" path={`sections.${k}`}>
-      <h2
-        className={
-          side
-            ? "font-bold text-[13.3px] text-[var(--cv-accent)]"
-            : "font-bold text-[17.3px] text-[var(--cv-accent)] tracking-[-0.01em]"
-        }
-      >
-        <E placeholder={m.cv_ph_section()} {...sectionLabel(cv, k)} />
-      </h2>
-    </Sel>
-  );
-}
+const Title = ({ cv, k, side }: { cv: CV; k: OrderKey; side?: boolean }) => (
+  <Sel label={m.cv_sel_section()} list="sections" path={`sections.${k}`}>
+    <h2
+      className={
+        side
+          ? "text-[13.3px] font-bold text-[var(--cv-accent)]"
+          : "text-[17.3px] font-bold tracking-[-0.01em] text-[var(--cv-accent)]"
+      }
+    >
+      <E placeholder={m.cv_ph_section()} {...sectionLabel(cv, k)} />
+    </h2>
+  </Sel>
+);
 
 const entryClass = "border-[#e8e8e8] border-l-2 pl-4";
 
-function experienceBlocks(cv: CV): Block[] {
-  return cv.experience.map((e, i) => {
+const experienceBlocks = (cv: CV): Block[] =>
+  cv.experience.map((e, i) => {
     const p = `experience.${i}`;
     return {
       key: e.id,
@@ -117,7 +109,7 @@ function experienceBlocks(cv: CV): Block[] {
           list="experience"
           path={p}
         >
-          <div className="flex flex-wrap font-medium text-[#888] text-[11.3px]">
+          <div className="flex flex-wrap text-[11.3px] font-medium text-[#888]">
             <DateRange end={e.end} p={p} start={e.start} />
             <Show path={p} value={e.location}>
               <span>
@@ -152,10 +144,9 @@ function experienceBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function projectBlocks(cv: CV): Block[] {
-  return cv.projects.map((pr, i) => {
+const projectBlocks = (cv: CV): Block[] =>
+  cv.projects.map((pr, i) => {
     const p = `projects.${i}`;
     return {
       key: pr.id,
@@ -175,7 +166,7 @@ function projectBlocks(cv: CV): Block[] {
             />
           </p>
           <Show path={p} value={pr.url}>
-            <p className="text-[#888] text-[11.3px]">
+            <p className="text-[11.3px] text-[#888]">
               <E
                 path={`${p}.url`}
                 placeholder={m.cv_ph_link()}
@@ -189,24 +180,23 @@ function projectBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function skillBlocks(cv: CV): Block[] {
-  return cv.skills.map((s, i) => {
+const skillBlocks = (cv: CV): Block[] =>
+  cv.skills.map((s, i) => {
     const p = `skills.${i}`;
     return {
       key: s.id,
       gap: i === 0 ? 8 : 12,
       node: (
         <Sel label={m.cv_sel_skill_group()} list="skills" path={p}>
-          <p className="font-semibold text-[12px]">
+          <p className="text-[12px] font-semibold">
             <E
               path={`${p}.name`}
               placeholder={m.cv_ph_group_name()}
               value={s.name}
             />
           </p>
-          <ul className="mt-1 space-y-1 text-[#333] text-[11.3px] leading-[1.45]">
+          <ul className="mt-1 space-y-1 text-[11.3px] leading-[1.45] text-[#333]">
             {s.items.map((it, j) => {
               const ip = `${p}.items.${j}`;
               return (
@@ -245,50 +235,47 @@ function skillBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function languageBlocks(cv: CV): Block[] {
-  return [
-    {
-      key: "languages",
-      gap: 8,
-      node: (
-        <ul className="space-y-1 text-[12px]">
-          {cv.languages.map((l, i) => (
-            <Sel
-              as="li"
-              className="flex justify-between gap-2"
-              key={l.id}
-              label={m.cv_sel_language()}
-              list="languages"
-              path={`languages.${i}`}
-            >
-              <span className="font-medium">
+const languageBlocks = (cv: CV): Block[] => [
+  {
+    key: "languages",
+    gap: 8,
+    node: (
+      <ul className="space-y-1 text-[12px]">
+        {cv.languages.map((l, i) => (
+          <Sel
+            as="li"
+            className="flex justify-between gap-2"
+            key={l.id}
+            label={m.cv_sel_language()}
+            list="languages"
+            path={`languages.${i}`}
+          >
+            <span className="font-medium">
+              <E
+                path={`languages.${i}.name`}
+                placeholder={m.cv_ph_language()}
+                value={l.name}
+              />
+            </span>
+            <Show path={`languages.${i}`} value={l.level}>
+              <span className="text-right text-[#666]">
                 <E
-                  path={`languages.${i}.name`}
-                  placeholder={m.cv_ph_language()}
-                  value={l.name}
+                  path={`languages.${i}.level`}
+                  placeholder={m.cv_ph_level()}
+                  value={l.level}
                 />
               </span>
-              <Show path={`languages.${i}`} value={l.level}>
-                <span className="text-right text-[#666]">
-                  <E
-                    path={`languages.${i}.level`}
-                    placeholder={m.cv_ph_level()}
-                    value={l.level}
-                  />
-                </span>
-              </Show>
-            </Sel>
-          ))}
-        </ul>
-      ),
-    },
-  ];
-}
+            </Show>
+          </Sel>
+        ))}
+      </ul>
+    ),
+  },
+];
 
-function educationBlocks(cv: CV): Block[] {
-  return cv.education.map((e, i) => {
+const educationBlocks = (cv: CV): Block[] =>
+  cv.education.map((e, i) => {
     const p = `education.${i}`;
     return {
       key: e.id,
@@ -343,10 +330,9 @@ function educationBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function customBlocks(section: CustomSection, list: string): Block[] {
-  return section.items.map((it, i) => {
+const customBlocks = (section: CustomSection, list: string): Block[] =>
+  section.items.map((it, i) => {
     const p = `${list}.items.${i}`;
     return {
       key: it.id,
@@ -369,7 +355,7 @@ function customBlocks(section: CustomSection, list: string): Block[] {
               value: it.location,
               placeholder: m.cv_ph_location(),
             }}
-            className="font-medium text-[#888] text-[11.3px]"
+            className="text-[11.3px] font-medium text-[#888]"
             item={p}
             separator=" · "
           />
@@ -395,7 +381,6 @@ function customBlocks(section: CustomSection, list: string): Block[] {
       ),
     };
   });
-}
 
 const MAIN_BLOCKS: Partial<Record<SectionKey, (cv: CV) => Block[]>> = {
   experience: experienceBlocks,
@@ -430,7 +415,7 @@ export const modern: TemplateDef = {
         key: "header",
         node: (
           <Sel label={m.cv_sel_details()} path="basics">
-            <h1 className="font-bold text-[37px] leading-[1.05] tracking-[-0.03em]">
+            <h1 className="text-[37px] leading-[1.05] font-bold tracking-[-0.03em]">
               <E
                 path="basics.name"
                 placeholder={m.cv_ph_your_name()}
@@ -438,7 +423,7 @@ export const modern: TemplateDef = {
               />
             </h1>
             <Show path="basics" value={b.headline}>
-              <p className="mt-2 text-[#666] text-[16px]">
+              <p className="mt-2 text-[16px] text-[#666]">
                 <E
                   path="basics.headline"
                   placeholder={m.cv_ph_headline()}
@@ -477,7 +462,7 @@ export const modern: TemplateDef = {
           <Sel label={m.cv_sel_details()} path="basics">
             <Avatar cv={cv} />
             <Contacts
-              className="mt-7 space-y-1 text-[#444] text-[12px]"
+              className="mt-7 space-y-1 text-[12px] text-[#444]"
               cv={cv}
               itemClassName="break-words"
             />
@@ -487,7 +472,7 @@ export const modern: TemplateDef = {
     ];
 
     for (const key of orderedSections(cv)) {
-      const inSide = !isCustomKey(key) && SIDE.includes(key);
+      const inSide = !isCustomKey(key) && SIDE.has(key);
       const target = inSide ? side : main;
       const blocks = sectionBlocks(
         cv,
@@ -498,13 +483,15 @@ export const modern: TemplateDef = {
       if (!(isCustomKey(key) || blocks.length)) {
         continue;
       }
-      target.push({
-        key: `title-${key}`,
-        gap: 32,
-        keepWithNext: true,
-        node: <Title cv={cv} k={key} side={inSide} />,
-      });
-      target.push(...blocks);
+      target.push(
+        {
+          key: `title-${key}`,
+          gap: 32,
+          keepWithNext: true,
+          node: <Title cv={cv} k={key} side={inSide} />,
+        },
+        ...blocks
+      );
     }
     return { main, side };
   },

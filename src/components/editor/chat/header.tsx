@@ -38,11 +38,37 @@ import { useDockHandle } from "../chat-dock";
 
 export type DockTab = "chat" | "history";
 
-/**
- * Top of the chat card: Chat/History tabs, grab it to move the card
- * (desktop), chat settings (export, share, clear) and minimise.
- */
-export function ChatHeader({
+const TabButton = ({
+  id,
+  label,
+  active,
+  onTab,
+}: {
+  id: DockTab;
+  label: string;
+  active: boolean;
+  onTab: (tab: DockTab) => void;
+}) => {
+  const pick = useCallback(() => onTab(id), [id, onTab]);
+  return (
+    <button
+      aria-selected={active}
+      className={cn(
+        "h-8 rounded-full px-3 text-[13px] font-medium transition-colors",
+        active
+          ? "bg-surface text-foreground"
+          : "text-muted-foreground hover:text-foreground"
+      )}
+      onClick={pick}
+      role="tab"
+      type="button"
+    >
+      {label}
+    </button>
+  );
+};
+
+export const ChatHeader = ({
   tab,
   onTab,
   hasMessages,
@@ -56,7 +82,7 @@ export function ChatHeader({
   onExport: () => void;
   onShare: () => void;
   onClear: () => void;
-}) {
+}) => {
   const dock = useDockHandle();
   const [confirm, setConfirm] = useState(false);
   const askClear = useCallback(() => setConfirm(true), []);
@@ -68,7 +94,7 @@ export function ChatHeader({
   return (
     <div
       className={cn(
-        "flex h-12 shrink-0 touch-none select-none items-center gap-1 border-b pr-2 pl-4",
+        "flex h-12 shrink-0 touch-none items-center gap-1 border-b pr-2 pl-4 select-none",
         dock?.dragging ? "lg:cursor-grabbing" : "lg:cursor-grab"
       )}
       {...dock?.grab}
@@ -128,8 +154,8 @@ export function ChatHeader({
               render={
                 <Button
                   aria-label={m.chat_minimise_aria()}
-                  className="hidden text-muted-foreground lg:inline-flex"
-                  onClick={dock.minimize}
+                  className="text-muted-foreground hidden lg:inline-flex"
+                  onClick={dock.handleMinimize}
                   size="icon-sm"
                   variant="ghost"
                 />
@@ -160,34 +186,4 @@ export function ChatHeader({
       </AlertDialog>
     </div>
   );
-}
-
-function TabButton({
-  id,
-  label,
-  active,
-  onTab,
-}: {
-  id: DockTab;
-  label: string;
-  active: boolean;
-  onTab: (tab: DockTab) => void;
-}) {
-  const pick = useCallback(() => onTab(id), [id, onTab]);
-  return (
-    <button
-      aria-selected={active}
-      className={cn(
-        "h-8 rounded-full px-3 font-medium text-[13px] transition-colors",
-        active
-          ? "bg-surface text-foreground"
-          : "text-muted-foreground hover:text-foreground"
-      )}
-      onClick={pick}
-      role="tab"
-      type="button"
-    >
-      {label}
-    </button>
-  );
-}
+};

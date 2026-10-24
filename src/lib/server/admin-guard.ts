@@ -5,13 +5,11 @@ import { account } from "#/db/schema";
 import { auth } from "#/lib/auth";
 import { serverEnv } from "#/lib/server/env";
 
-/** Lower-cased emails from ADMIN_EMAILS (comma separated). */
-export async function adminEmails() {
-  return ((await serverEnv("ADMIN_EMAILS")) ?? "")
+export const adminEmails = async () =>
+  ((await serverEnv("ADMIN_EMAILS")) ?? "")
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
-}
 
 interface SessionUser {
   banned?: boolean | null;
@@ -21,15 +19,12 @@ interface SessionUser {
   isAnonymous?: boolean | null;
 }
 
-/**
- * Whether a signed-in user may use /admin: their email is in ADMIN_EMAILS
- * and proven, i.e. verified or coming from a Google sign-in.
- */
-export async function isAdminUser(user: SessionUser | null | undefined) {
+export const isAdminUser = async (user: SessionUser | null | undefined) => {
   if (!user || user.isAnonymous || user.banned) {
     return false;
   }
-  if (!(await adminEmails()).includes(user.email.toLowerCase())) {
+  const admins = await adminEmails();
+  if (!admins.includes(user.email.toLowerCase())) {
     return false;
   }
   if (user.emailVerified) {
@@ -40,11 +35,10 @@ export async function isAdminUser(user: SessionUser | null | undefined) {
     .from(account)
     .where(and(eq(account.userId, user.id), eq(account.providerId, "google")));
   return Boolean(google);
-}
+};
 
-/** The admin behind a request, or null. */
-export async function adminFromHeaders(headers: Headers) {
+export const adminFromHeaders = async (headers: Headers) => {
   const session = await auth.api.getSession({ headers });
   const user = session?.user as SessionUser | undefined;
   return (await isAdminUser(user)) ? (user as SessionUser) : null;
-}
+};

@@ -18,5 +18,5 @@
   "includeExamples": false,
   "version": 1,
   "framework": "react",
-  "chosenAddOns": ["better-auth", "drizzle", "nitro", "tanstack-query", "biome"]
+  "chosenAddOns": ["better-auth", "drizzle", "nitro", "tanstack-query"]
 }

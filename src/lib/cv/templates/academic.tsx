@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { E, Sel } from "#/components/cv/editing";
 import { m } from "#/paraglide/messages.js";
+
 import type { Block, TemplateDef } from "../engine";
 import type { CustomSection, CV, SectionKey } from "../schema";
 import {
@@ -17,23 +18,20 @@ import {
 const GRID = "grid grid-cols-[104px_1fr] gap-x-5";
 const DATE = "text-[#555] text-[11.6px] tabular-nums leading-[1.6]";
 
-/** Dates (or a short label) in the margin, the entry on the right. */
-function Row({
+const Row = ({
   margin,
   children,
 }: {
   margin?: ReactNode;
   children: ReactNode;
-}) {
-  return (
-    <div className={GRID}>
-      <div className={DATE}>{margin}</div>
-      <div className="min-w-0">{children}</div>
-    </div>
-  );
-}
+}) => (
+  <div className={GRID}>
+    <div className={DATE}>{margin}</div>
+    <div className="min-w-0">{children}</div>
+  </div>
+);
 
-function Bullets({ list, items }: { list: string; items: string[] }) {
+const Bullets = ({ list, items }: { list: string; items: string[] }) => {
   if (items.length === 0) {
     return null;
   }
@@ -42,7 +40,7 @@ function Bullets({ list, items }: { list: string; items: string[] }) {
       {items.map((h, j) => (
         <Sel
           as="li"
-          // biome-ignore lint/suspicious/noArrayIndexKey: bullets are plain strings; position is their identity
+          // oxlint-disable-next-line react/no-array-index-key -- bullets are plain strings; position is their identity
           key={j}
           label={m.cv_sel_bullet()}
           list={list}
@@ -58,26 +56,23 @@ function Bullets({ list, items }: { list: string; items: string[] }) {
       ))}
     </ul>
   );
-}
+};
 
-function Description({ p, value }: { p: string; value: string }) {
-  return (
-    <Show path={p} value={value}>
-      <p className="mt-[2px] text-[#333]">
-        <E
-          multiline
-          path={`${p}.description`}
-          placeholder={m.cv_ph_description()}
-          rich
-          value={value}
-        />
-      </p>
-    </Show>
-  );
-}
+const Description = ({ p, value }: { p: string; value: string }) => (
+  <Show path={p} value={value}>
+    <p className="mt-[2px] text-[#333]">
+      <E
+        multiline
+        path={`${p}.description`}
+        placeholder={m.cv_ph_description()}
+        rich
+        value={value}
+      />
+    </p>
+  </Show>
+);
 
-/** "Institution, Place" in italics. */
-function Where({
+const Where = ({
   p,
   name,
   location,
@@ -87,32 +82,30 @@ function Where({
   name: { field: string; value: string };
   location: string;
   placeholder: string;
-}) {
-  return (
-    <p className="italic">
-      <Show path={p} value={name.value}>
+}) => (
+  <p className="italic">
+    <Show path={p} value={name.value}>
+      <E
+        path={`${p}.${name.field}`}
+        placeholder={placeholder}
+        value={name.value}
+      />
+    </Show>
+    <Show path={p} value={location}>
+      <span>
+        {name.value ? ", " : null}
         <E
-          path={`${p}.${name.field}`}
-          placeholder={placeholder}
-          value={name.value}
+          path={`${p}.location`}
+          placeholder={m.cv_ph_location()}
+          value={location}
         />
-      </Show>
-      <Show path={p} value={location}>
-        <span>
-          {name.value ? ", " : null}
-          <E
-            path={`${p}.location`}
-            placeholder={m.cv_ph_location()}
-            value={location}
-          />
-        </span>
-      </Show>
-    </p>
-  );
-}
+      </span>
+    </Show>
+  </p>
+);
 
-function experienceBlocks(cv: CV): Block[] {
-  return cv.experience.map((e, i) => {
+const experienceBlocks = (cv: CV): Block[] =>
+  cv.experience.map((e, i) => {
     const p = `experience.${i}`;
     return {
       key: e.id,
@@ -144,10 +137,9 @@ function experienceBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function educationBlocks(cv: CV): Block[] {
-  return cv.education.map((e, i) => {
+const educationBlocks = (cv: CV): Block[] =>
+  cv.education.map((e, i) => {
     const p = `education.${i}`;
     return {
       key: e.id,
@@ -178,10 +170,9 @@ function educationBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function skillBlocks(cv: CV): Block[] {
-  return cv.skills.map((s, i) => {
+const skillBlocks = (cv: CV): Block[] =>
+  cv.skills.map((s, i) => {
     const p = `skills.${i}`;
     return {
       key: s.id,
@@ -211,10 +202,9 @@ function skillBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function projectBlocks(cv: CV): Block[] {
-  return cv.projects.map((pr, i) => {
+const projectBlocks = (cv: CV): Block[] =>
+  cv.projects.map((pr, i) => {
     const p = `projects.${i}`;
     return {
       key: pr.id,
@@ -245,56 +235,49 @@ function projectBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function languageBlocks(cv: CV): Block[] {
-  return [
-    {
-      key: "languages",
-      gap: 8,
-      node: (
-        <div>
-          {cv.languages.map((l, i) => {
-            const p = `languages.${i}`;
-            return (
-              <Sel
-                key={l.id}
-                label={m.cv_sel_language()}
-                list="languages"
-                path={p}
+const languageBlocks = (cv: CV): Block[] => [
+  {
+    key: "languages",
+    gap: 8,
+    node: (
+      <div>
+        {cv.languages.map((l, i) => {
+          const p = `languages.${i}`;
+          return (
+            <Sel
+              key={l.id}
+              label={m.cv_sel_language()}
+              list="languages"
+              path={p}
+            >
+              <Row
+                margin={
+                  <E
+                    path={`${p}.name`}
+                    placeholder={m.cv_ph_language()}
+                    value={l.name}
+                  />
+                }
               >
-                <Row
-                  margin={
-                    <E
-                      path={`${p}.name`}
-                      placeholder={m.cv_ph_language()}
-                      value={l.name}
-                    />
-                  }
-                >
-                  <Show path={p} value={l.level}>
-                    <E
-                      path={`${p}.level`}
-                      placeholder={m.cv_ph_level()}
-                      value={l.level}
-                    />
-                  </Show>
-                </Row>
-              </Sel>
-            );
-          })}
-        </div>
-      ),
-    },
-  ];
-}
+                <Show path={p} value={l.level}>
+                  <E
+                    path={`${p}.level`}
+                    placeholder={m.cv_ph_level()}
+                    value={l.level}
+                  />
+                </Show>
+              </Row>
+            </Sel>
+          );
+        })}
+      </div>
+    ),
+  },
+];
 
-/**
- * Entries of custom sections (publications, grants, talks, teaching) read as
- * citations: one hanging-indent paragraph, year in the margin.
- */
-function customBlocks(section: CustomSection, list: string): Block[] {
-  return section.items.map((it, i) => {
+const customBlocks = (section: CustomSection, list: string): Block[] =>
+  section.items.map((it, i) => {
     const p = `${list}.items.${i}`;
     return {
       key: it.id,
@@ -348,7 +331,6 @@ function customBlocks(section: CustomSection, list: string): Block[] {
       ),
     };
   });
-}
 
 const SECTION_BLOCKS: Record<SectionKey, (cv: CV) => Block[]> = {
   experience: experienceBlocks,
@@ -358,14 +340,12 @@ const SECTION_BLOCKS: Record<SectionKey, (cv: CV) => Block[]> = {
   languages: languageBlocks,
 };
 
-function Heading({ children }: { children: ReactNode }) {
-  return (
-    <h2 className="flex items-center gap-3 text-[15px] text-[var(--cv-accent)] tracking-[0.02em] [font-variant-caps:small-caps]">
-      {children}
-      <span className="h-px flex-1 bg-[#bbb]" />
-    </h2>
-  );
-}
+const Heading = ({ children }: { children: ReactNode }) => (
+  <h2 className="flex items-center gap-3 text-[15px] tracking-[0.02em] text-[var(--cv-accent)] [font-variant-caps:small-caps]">
+    {children}
+    <span className="h-px flex-1 bg-[#bbb]" />
+  </h2>
+);
 
 /**
  * A conservative academic CV: serif, dates in the margin, small-caps section
@@ -392,7 +372,7 @@ export const academic: TemplateDef = {
         key: "header",
         node: (
           <Sel label={m.cv_sel_details()} path="basics">
-            <h1 className="text-[29px] text-[var(--cv-accent)] leading-tight tracking-[-0.005em]">
+            <h1 className="text-[29px] leading-tight tracking-[-0.005em] text-[var(--cv-accent)]">
               <E
                 path="basics.name"
                 placeholder={m.cv_ph_your_name()}
@@ -400,7 +380,7 @@ export const academic: TemplateDef = {
               />
             </h1>
             <Show path="basics" value={b.headline}>
-              <p className="mt-[2px] text-[#444] text-[14px] italic">
+              <p className="mt-[2px] text-[14px] text-[#444] italic">
                 <E
                   path="basics.headline"
                   placeholder={m.cv_ph_academic_headline()}
@@ -409,7 +389,7 @@ export const academic: TemplateDef = {
               </p>
             </Show>
             <Contacts
-              className="mt-2 flex flex-wrap text-[#444] text-[11.8px]"
+              className="mt-2 flex flex-wrap text-[11.8px] text-[#444]"
               cv={cv}
               separator={<span className="mx-2 text-[#aaa]">·</span>}
             />
@@ -448,23 +428,25 @@ export const academic: TemplateDef = {
       });
     }
     for (const key of orderedSections(cv)) {
-      blocks.push({
-        key: `title-${key}`,
-        gap: 22,
-        keepWithNext: true,
-        node: (
-          <Sel
-            label={m.cv_sel_section()}
-            list="sections"
-            path={`sections.${key}`}
-          >
-            <Heading>
-              <E placeholder={m.cv_ph_section()} {...sectionLabel(cv, key)} />
-            </Heading>
-          </Sel>
-        ),
-      });
-      blocks.push(...sectionBlocks(cv, key, SECTION_BLOCKS, customBlocks));
+      blocks.push(
+        {
+          key: `title-${key}`,
+          gap: 22,
+          keepWithNext: true,
+          node: (
+            <Sel
+              label={m.cv_sel_section()}
+              list="sections"
+              path={`sections.${key}`}
+            >
+              <Heading>
+                <E placeholder={m.cv_ph_section()} {...sectionLabel(cv, key)} />
+              </Heading>
+            </Sel>
+          ),
+        },
+        ...sectionBlocks(cv, key, SECTION_BLOCKS, customBlocks)
+      );
     }
     return { main: blocks };
   },

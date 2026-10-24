@@ -1,4 +1,5 @@
-import { generateText, type LanguageModel, type LanguageModelUsage } from "ai";
+import { generateText } from "ai";
+import type { LanguageModel, LanguageModelUsage } from "ai";
 
 import type { CV } from "#/lib/cv/schema";
 
@@ -16,7 +17,7 @@ const KEEP = new Set([
   "language",
 ]);
 
-const FENCE = /^```(?:json)?\s*|\s*```$/g;
+const FENCE = /^```(?:json)?\s*|\s*```$/gu;
 
 /** Tokens used by one translation, summed over its parallel requests. */
 export interface TranslateUsage {
@@ -31,19 +32,62 @@ export interface TranslateUsage {
   usages: LanguageModelUsage[];
 }
 
-/**
- * Translates every piece of text in a CV: titles, descriptions, bullets,
- * dates (month names, "Present"), meta lines, skills, section headings and
- * custom sections. Each part of the CV goes as its own request, in parallel,
- * and the result is merged back leaf by leaf, so ids, links and structure
- * can never be changed or lost. A part that fails keeps its original text.
- */
-export async function translateCv(
+const hasText = (value: unknown): boolean => {
+  if (typeof value === "string") {
+    return value.trim().length > 0;
+  }
+  if (Array.isArray(value)) {
+    return value.some(hasText);
+  }
+  if (value && typeof value === "object") {
+    return Object.entries(value).some(([k, v]) => !KEEP.has(k) && hasText(v));
+  }
+  return false;
+};
+
+const strip = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    return value.map(strip);
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([k]) => !KEEP.has(k))
+        .map(([k, v]) => [k, strip(v)])
+    );
+  }
+  return value;
+};
+
+const mergeStrings = (original: unknown, translated: unknown): unknown => {
+  if (typeof original === "string") {
+    return typeof translated === "string" ? translated : original;
+  }
+  if (Array.isArray(original)) {
+    const list = Array.isArray(translated) ? translated : [];
+    return original.map((v, i) => mergeStrings(v, list[i]));
+  }
+  if (original && typeof original === "object") {
+    const t =
+      translated && typeof translated === "object"
+        ? (translated as Record<string, unknown>)
+        : {};
+    return Object.fromEntries(
+      Object.entries(original).map(([k, v]) => [
+        k,
+        KEEP.has(k) ? v : mergeStrings(v, t[k]),
+      ])
+    );
+  }
+  return original;
+};
+
+export const translateCv = async (
   cv: CV,
   language: string,
   model: LanguageModel,
   onUsage?: (usage: TranslateUsage) => void
-): Promise<CV> {
+): Promise<CV> => {
   const started = Date.now();
   const usages: LanguageModelUsage[] = [];
   let failed = 0;
@@ -67,7 +111,10 @@ Rules:
           prompt: JSON.stringify(strip(value)),
         });
         usages.push(usage);
-        return [key, mergeStrings(value, JSON.parse(text.replace(FENCE, "")))];
+        return [
+          key,
+          mergeStrings(value, JSON.parse(text.replaceAll(FENCE, ""))),
+        ];
       } catch (error) {
         console.error("[translate_cv]", key, error);
         failed += 1;
@@ -87,59 +134,4 @@ Rules:
     failedSections,
   });
   return { ...cv, ...Object.fromEntries(translated) } as CV;
-}
-
-function hasText(value: unknown): boolean {
-  if (typeof value === "string") {
-    return value.trim().length > 0;
-  }
-  if (Array.isArray(value)) {
-    return value.some(hasText);
-  }
-  if (value && typeof value === "object") {
-    return Object.entries(value).some(([k, v]) => !KEEP.has(k) && hasText(v));
-  }
-  return false;
-}
-
-/** The value without the data-only fields, so the model only sees words. */
-function strip(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(strip);
-  }
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value)
-        .filter(([k]) => !KEEP.has(k))
-        .map(([k, v]) => [k, strip(v)])
-    );
-  }
-  return value;
-}
-
-/**
- * Take strings from `translated` wherever the original has a string at the
- * same place; everything else (ids, numbers, links, missing bits) stays.
- */
-function mergeStrings(original: unknown, translated: unknown): unknown {
-  if (typeof original === "string") {
-    return typeof translated === "string" ? translated : original;
-  }
-  if (Array.isArray(original)) {
-    const list = Array.isArray(translated) ? translated : [];
-    return original.map((v, i) => mergeStrings(v, list[i]));
-  }
-  if (original && typeof original === "object") {
-    const t =
-      translated && typeof translated === "object"
-        ? (translated as Record<string, unknown>)
-        : {};
-    return Object.fromEntries(
-      Object.entries(original).map(([k, v]) => [
-        k,
-        KEEP.has(k) ? v : mergeStrings(v, t[k]),
-      ])
-    );
-  }
-  return original;
-}
+};

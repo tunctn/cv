@@ -6,8 +6,7 @@ import { createAuthClient } from "better-auth/react";
 
 import { track } from "#/lib/track";
 
-/** Product analytics for sign-in and sign-up, wherever they are started. */
-function trackAuth(url: string) {
+const trackAuth = (url: string) => {
   if (url.includes("/sign-up/email")) {
     track("signup", { method: "email" });
   } else if (url.includes("/sign-in/email")) {
@@ -19,7 +18,7 @@ function trackAuth(url: string) {
   } else if (url.includes("/delete-user")) {
     track("account_deleted");
   }
-}
+};
 
 export const authClient = createAuthClient({
   plugins: [anonymousClient(), lastLoginMethodClient()],

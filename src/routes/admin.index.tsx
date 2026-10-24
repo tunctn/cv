@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, getRouteApi } from "@tanstack/react-router";
 
 import { CostChart, SignupChart } from "#/components/admin/cost-chart";
 import {
@@ -14,13 +14,10 @@ import {
 import { getAdminOverview } from "#/lib/admin/functions";
 import { m } from "#/paraglide/messages.js";
 
-export const Route = createFileRoute("/admin/")({
-  loader: () => getAdminOverview(),
-  component: Overview,
-});
+const routeApi = getRouteApi("/admin/");
 
-function Overview() {
-  const o = Route.useLoaderData();
+const Overview = () => {
+  const o = routeApi.useLoaderData();
   return (
     <>
       <PageTitle
@@ -80,7 +77,7 @@ function Overview() {
         <Panel
           action={
             <Link
-              className="text-[13px] text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground text-[13px]"
               to="/admin/usage"
             >
               {m.admin_see_all()}
@@ -93,7 +90,7 @@ function Overview() {
         <div className="flex flex-col gap-3">
           <Panel title={m.admin_signups_title()}>
             <SignupChart days={o.days} />
-            <p className="px-4 pb-4 text-[12.5px] text-muted-foreground">
+            <p className="text-muted-foreground px-4 pb-4 text-[12.5px]">
               {m.admin_active7({ count: fmtInt(o.users.active7) })}
               {o.users.banned > 0
                 ? ` · ${m.admin_banned_count({ count: fmtInt(o.users.banned) })}`
@@ -102,7 +99,7 @@ function Overview() {
           </Panel>
           <Panel title={m.admin_top_spenders()}>
             {o.topSpenders.length === 0 ? (
-              <p className="px-4 py-6 text-center text-[13px] text-muted-foreground">
+              <p className="text-muted-foreground px-4 py-6 text-center text-[13px]">
                 {m.admin_empty()}
               </p>
             ) : (
@@ -110,7 +107,7 @@ function Overview() {
                 {o.topSpenders.map((s) => (
                   <li key={s.userId}>
                     <Link
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-foreground/[0.03]"
+                      className="hover:bg-foreground/[0.03] flex items-center gap-3 px-4 py-2.5"
                       params={{ id: s.userId ?? "" }}
                       to="/admin/users/$id"
                     >
@@ -119,7 +116,7 @@ function Overview() {
                         <span className="block truncate text-[13.5px]">
                           {s.isAnonymous ? m.admin_guest() : s.email}
                         </span>
-                        <span className="block text-[12px] text-muted-foreground">
+                        <span className="text-muted-foreground block text-[12px]">
                           {m.admin_requests_count({ count: s.requests })}
                         </span>
                       </span>
@@ -137,4 +134,9 @@ function Overview() {
       </div>
     </>
   );
-}
+};
+
+export const Route = createFileRoute("/admin/")({
+  loader: () => getAdminOverview(),
+  component: Overview,
+});

@@ -1,4 +1,5 @@
-import { getLocale, isLocale, type Locale } from "#/paraglide/runtime.js";
+import { getLocale, isLocale } from "#/paraglide/runtime.js";
+import type { Locale } from "#/paraglide/runtime.js";
 
 import ar from "./samples/ar.json";
 import bn from "./samples/bn.json";
@@ -20,7 +21,8 @@ import tr from "./samples/tr.json";
 import uk from "./samples/uk.json";
 import vi from "./samples/vi.json";
 import zh from "./samples/zh.json";
-import { type CV, normalizeCv } from "./schema";
+import { normalizeCv } from "./schema";
+import type { CV } from "./schema";
 
 /**
  * The example CV in every UI language: a local name, cities, companies and
@@ -49,8 +51,7 @@ const SAMPLES: Record<Locale, unknown> = {
   th,
 };
 
-/** The example CV in `locale` (default: the current UI locale), English as fallback. */
-export function sampleCv(locale: string = getLocale()): CV {
+export const sampleCv = (locale: string = getLocale()): CV => {
   const key = isLocale(locale) ? locale : "en";
   return normalizeCv(structuredClone(SAMPLES[key] ?? en));
-}
+};

@@ -10,14 +10,14 @@ import { getTemplate } from "#/lib/cv/templates";
 import { getBrowser } from "#/lib/server/browser";
 import { signPrintToken } from "#/lib/server/print-token";
 
-function fileName(title: string, ext: string) {
+const fileName = (title: string, ext: string) => {
   const base =
     title
-      .replace(/[^\p{L}\p{N}_ -]+/gu, "")
+      .replaceAll(/[^\p{L}\p{N}_ -]+/gu, "")
       .trim()
-      .replace(/\s+/g, "_") || "CV";
+      .replaceAll(/\s+/gu, "_") || "CV";
   return `${base}.${ext}`;
-}
+};
 
 export const Route = createFileRoute("/api/export/$id")({
   server: {

@@ -7,16 +7,12 @@ import {
   redirect,
   useNavigate,
   useRouter,
+  getRouteApi,
 } from "@tanstack/react-router";
-import {
-  type FormEvent,
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { FormEvent, ReactNode } from "react";
 import { toast } from "sonner";
+
 import { Icon } from "#/components/icon";
 import { LanguageSelect } from "#/components/language-select";
 import { SiteFooter } from "#/components/site-footer";
@@ -48,29 +44,15 @@ import { track } from "#/lib/track";
 import { cn } from "#/lib/utils";
 import { m } from "#/paraglide/messages.js";
 
-export const Route = createFileRoute("/settings")({
-  loader: async () => {
-    const viewer = await getViewer();
-    if (!viewer || viewer.isAnonymous) {
-      throw redirect({ to: "/signup" });
-    }
-    const account = await getAccount();
-    if (!account) {
-      throw redirect({ to: "/signup" });
-    }
-    return { viewer, account };
-  },
-  head: () => ({ meta: [{ title: m.settings_meta_title() }] }),
-  component: Settings,
-});
+const routeApi = getRouteApi("/settings");
 
 type Account = NonNullable<Awaited<ReturnType<typeof getAccount>>>;
 
 const MIN_PASSWORD = 8;
-const HEIC = /\.hei[cf]$/i;
 
-/** A titled group of rows on a surface. */
-function Group({
+const HEIC = /\.hei[cf]$/iu;
+
+const Group = ({
   title,
   description,
   children,
@@ -80,32 +62,29 @@ function Group({
   description?: string;
   children: ReactNode;
   danger?: boolean;
-}) {
-  return (
-    <section>
-      <h2
-        className={
-          danger
-            ? "font-semibold text-[15px] text-destructive"
-            : "font-semibold text-[15px]"
-        }
-      >
-        {title}
-      </h2>
-      {description ? (
-        <p className="mt-0.5 text-[13.5px] text-muted-foreground">
-          {description}
-        </p>
-      ) : null}
-      <div className="mt-3 divide-y overflow-hidden rounded-[20px] border bg-background">
-        {children}
-      </div>
-    </section>
-  );
-}
+}) => (
+  <section>
+    <h2
+      className={
+        danger
+          ? "text-destructive text-[15px] font-semibold"
+          : "text-[15px] font-semibold"
+      }
+    >
+      {title}
+    </h2>
+    {description ? (
+      <p className="text-muted-foreground mt-0.5 text-[13.5px]">
+        {description}
+      </p>
+    ) : null}
+    <div className="bg-background mt-3 divide-y overflow-hidden rounded-[20px] border">
+      {children}
+    </div>
+  </section>
+);
 
-/** Label (and hint) on the left, the control on the right; stacks on phones. */
-function Row({
+const Row = ({
   label,
   hint,
   children,
@@ -113,117 +92,19 @@ function Row({
   label: string;
   hint?: string;
   children: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
-      <div className="min-w-0">
-        <p className="font-medium text-[14px]">{label}</p>
-        {hint ? (
-          <p className="mt-0.5 text-[13px] text-muted-foreground">{hint}</p>
-        ) : null}
-      </div>
-      <div className="shrink-0 sm:max-w-[60%]">{children}</div>
+}) => (
+  <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+    <div className="min-w-0">
+      <p className="text-[14px] font-medium">{label}</p>
+      {hint ? (
+        <p className="text-muted-foreground mt-0.5 text-[13px]">{hint}</p>
+      ) : null}
     </div>
-  );
-}
+    <div className="shrink-0 sm:max-w-[60%]">{children}</div>
+  </div>
+);
 
-function Settings() {
-  const { viewer, account } = Route.useLoaderData();
-  useEffect(() => {
-    track("settings_opened");
-  }, []);
-  return (
-    <div className="flex min-h-dvh flex-col">
-      <SiteHeader viewer={viewer} />
-      {/* rr-block: account details never appear in session replays. */}
-      <main className="rr-block mx-auto w-full max-w-[720px] flex-1 px-4 pt-8 pb-24 sm:px-6 sm:pt-12">
-        <h1 className="font-semibold text-[28px] tracking-[-0.03em] sm:text-[32px]">
-          {m.settings_title()}
-        </h1>
-        <div className="mt-8 space-y-10">
-          <ProfileGroup account={account} />
-          <PasswordGroup account={account} />
-          <Group title={m.settings_preferences()}>
-            <Row label={m.settings_language()}>
-              <LanguageSelect />
-            </Row>
-            <Row label={m.settings_theme()}>
-              <ThemeSwitcher />
-            </Row>
-          </Group>
-          <DangerGroup email={account.email} />
-        </div>
-      </main>
-      <SiteFooter />
-    </div>
-  );
-}
-
-function ProfileGroup({ account }: { account: Account }) {
-  const router = useRouter();
-  const [name, setName] = useState(account.name);
-  const [saving, setSaving] = useState(false);
-  const changed = name.trim() !== account.name && name.trim().length > 0;
-  const save = useCallback(
-    async (e: FormEvent) => {
-      e.preventDefault();
-      setSaving(true);
-      const res = await authClient.updateUser({ name: name.trim() });
-      setSaving(false);
-      if (res.error) {
-        toast.error(m.settings_save_failed());
-        return;
-      }
-      toast.success(m.settings_saved());
-      router.invalidate();
-    },
-    [name, router]
-  );
-  const onName = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value),
-    []
-  );
-  const google = account.providers.includes("google");
-  return (
-    <Group title={m.settings_profile()}>
-      <Row hint={m.settings_photo_hint()} label={m.settings_photo()}>
-        <PhotoPicker account={account} />
-      </Row>
-      <Row label={m.settings_name()}>
-        <form className="flex items-center gap-2" onSubmit={save}>
-          <Input
-            aria-label={m.settings_name()}
-            autoComplete="name"
-            className="w-full sm:w-[240px]"
-            maxLength={80}
-            onChange={onName}
-            value={name}
-          />
-          <Button disabled={!changed || saving} type="submit" variant="outline">
-            {m.settings_save()}
-          </Button>
-        </form>
-      </Row>
-      <Row
-        hint={google ? m.settings_email_google() : m.settings_email_hint()}
-        label={m.settings_email()}
-      >
-        <div className="flex items-center gap-3">
-          <p className="truncate text-[14px] text-muted-foreground">
-            {account.email}
-          </p>
-          {account.emailVerified || google ? null : (
-            <VerifyEmail email={account.email} />
-          )}
-          {account.canChangeEmail ? <ChangeEmail /> : null}
-        </div>
-      </Row>
-    </Group>
-  );
-}
-
-/** For unconfirmed emails: (re)send the confirmation link. */
-function VerifyEmail({ email }: { email: string }) {
+const VerifyEmail = ({ email }: { email: string }) => {
   const [busy, setBusy] = useState(false);
   const send = useCallback(async () => {
     setBusy(true);
@@ -243,10 +124,9 @@ function VerifyEmail({ email }: { email: string }) {
       {m.settings_verify()}
     </Button>
   );
-}
+};
 
-/** "Change" next to the email: sends a confirmation link to the new address. */
-function ChangeEmail() {
+const ChangeEmail = () => {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
@@ -312,13 +192,38 @@ function ChangeEmail() {
       </AlertDialog>
     </>
   );
-}
+};
 
-/**
- * Profile picture: click the avatar or "Upload", or drop an image on it. It is
- * cropped to a square and scaled to 256 px in the browser before upload.
- */
-function PhotoPicker({ account }: { account: Account }) {
+type AppRouter = ReturnType<typeof useRouter>;
+
+/** Crops and uploads a new avatar; toasts the outcome. Never throws. */
+const uploadAvatarFile = async (file: File, router: AppRouter) => {
+  try {
+    let dataUrl: string;
+    try {
+      dataUrl = await squareAvatar(file);
+    } catch (error) {
+      throw new Error(m.settings_photo_unsupported(), { cause: error });
+    }
+    await uploadAvatar({ data: { dataUrl } });
+    await router.invalidate();
+    toast.success(m.settings_photo_saved());
+  } catch (error) {
+    toast.error((error as Error).message || m.settings_photo_failed());
+  }
+};
+
+/** Removes the avatar; toasts on failure. Never throws. */
+const removeAvatarFile = async (router: AppRouter) => {
+  try {
+    await removeAvatar();
+    await router.invalidate();
+  } catch {
+    toast.error(m.settings_photo_failed());
+  }
+};
+
+const PhotoPicker = ({ account }: { account: Account }) => {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -335,34 +240,15 @@ function PhotoPicker({ account }: { account: Account }) {
         return;
       }
       setBusy(true);
-      try {
-        let dataUrl: string;
-        try {
-          dataUrl = await squareAvatar(file);
-        } catch (cause) {
-          throw new Error(m.settings_photo_unsupported(), { cause });
-        }
-        await uploadAvatar({ data: { dataUrl } });
-        await router.invalidate();
-        toast.success(m.settings_photo_saved());
-      } catch (err) {
-        toast.error((err as Error).message || m.settings_photo_failed());
-      } finally {
-        setBusy(false);
-      }
+      await uploadAvatarFile(file, router);
+      setBusy(false);
     },
     [router]
   );
   const remove = useCallback(async () => {
     setBusy(true);
-    try {
-      await removeAvatar();
-      await router.invalidate();
-    } catch {
-      toast.error(m.settings_photo_failed());
-    } finally {
-      setBusy(false);
-    }
+    await removeAvatarFile(router);
+    setBusy(false);
   }, [router]);
   const pick = useCallback(() => input.current?.click(), []);
   const onFile = useCallback(
@@ -399,8 +285,8 @@ function PhotoPicker({ account }: { account: Account }) {
       <button
         aria-label={m.settings_photo_upload()}
         className={cn(
-          "group relative size-14 shrink-0 cursor-pointer overflow-hidden rounded-full outline-none ring-offset-2 ring-offset-background focus-visible:ring-2 focus-visible:ring-foreground/30",
-          over && "ring-2 ring-foreground/40"
+          "group ring-offset-background focus-visible:ring-foreground/30 relative size-14 shrink-0 cursor-pointer overflow-hidden rounded-full ring-offset-2 outline-none focus-visible:ring-2",
+          over && "ring-foreground/40 ring-2"
         )}
         disabled={busy}
         onClick={pick}
@@ -411,7 +297,7 @@ function PhotoPicker({ account }: { account: Account }) {
       >
         <Avatar className="size-14">
           {account.image ? <AvatarImage alt="" src={account.image} /> : null}
-          <AvatarFallback className="bg-surface font-medium text-[18px]">
+          <AvatarFallback className="bg-surface text-[18px] font-medium">
             {(account.name || account.email).slice(0, 1).toUpperCase()}
           </AvatarFallback>
         </Avatar>
@@ -447,9 +333,99 @@ function PhotoPicker({ account }: { account: Account }) {
       />
     </div>
   );
-}
+};
 
-function PasswordGroup({ account }: { account: Account }) {
+const ProfileGroup = ({ account }: { account: Account }) => {
+  const router = useRouter();
+  const [name, setName] = useState(account.name);
+  const [saving, setSaving] = useState(false);
+  const changed = name.trim() !== account.name && name.trim().length > 0;
+  const save = useCallback(
+    async (e: FormEvent) => {
+      e.preventDefault();
+      setSaving(true);
+      const res = await authClient.updateUser({ name: name.trim() });
+      setSaving(false);
+      if (res.error) {
+        toast.error(m.settings_save_failed());
+        return;
+      }
+      toast.success(m.settings_saved());
+      router.invalidate();
+    },
+    [name, router]
+  );
+  const onName = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value),
+    []
+  );
+  const google = account.providers.includes("google");
+  return (
+    <Group title={m.settings_profile()}>
+      <Row hint={m.settings_photo_hint()} label={m.settings_photo()}>
+        <PhotoPicker account={account} />
+      </Row>
+      <Row label={m.settings_name()}>
+        <form className="flex items-center gap-2" onSubmit={save}>
+          <Input
+            aria-label={m.settings_name()}
+            autoComplete="name"
+            className="w-full sm:w-[240px]"
+            maxLength={80}
+            onChange={onName}
+            value={name}
+          />
+          <Button disabled={!changed || saving} type="submit" variant="outline">
+            {m.settings_save()}
+          </Button>
+        </form>
+      </Row>
+      <Row
+        hint={google ? m.settings_email_google() : m.settings_email_hint()}
+        label={m.settings_email()}
+      >
+        <div className="flex items-center gap-3">
+          <p className="text-muted-foreground truncate text-[14px]">
+            {account.email}
+          </p>
+          {account.emailVerified || google ? null : (
+            <VerifyEmail email={account.email} />
+          )}
+          {account.canChangeEmail ? <ChangeEmail /> : null}
+        </div>
+      </Row>
+    </Group>
+  );
+};
+
+/** Changes or sets the password; toasts the outcome. Never throws. */
+const savePassword = async (
+  hasPassword: boolean,
+  current: string,
+  next: string
+): Promise<boolean> => {
+  try {
+    if (hasPassword) {
+      const res = await authClient.changePassword({
+        currentPassword: current,
+        newPassword: next,
+        revokeOtherSessions: true,
+      });
+      if (res.error) {
+        throw new Error(m.settings_password_wrong());
+      }
+    } else {
+      await setAccountPassword({ data: { newPassword: next } });
+    }
+    toast.success(m.settings_password_saved());
+    return true;
+  } catch (error) {
+    toast.error((error as Error).message || m.settings_save_failed());
+    return false;
+  }
+};
+
+const PasswordGroup = ({ account }: { account: Account }) => {
   const router = useRouter();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -468,28 +444,12 @@ function PasswordGroup({ account }: { account: Account }) {
     async (e: FormEvent) => {
       e.preventDefault();
       setSaving(true);
-      try {
-        if (account.hasPassword) {
-          const res = await authClient.changePassword({
-            currentPassword: current,
-            newPassword: next,
-            revokeOtherSessions: true,
-          });
-          if (res.error) {
-            throw new Error(m.settings_password_wrong());
-          }
-        } else {
-          await setAccountPassword({ data: { newPassword: next } });
-        }
-        toast.success(m.settings_password_saved());
+      if (await savePassword(account.hasPassword, current, next)) {
         setCurrent("");
         setNext("");
         router.invalidate();
-      } catch (err) {
-        toast.error((err as Error).message || m.settings_save_failed());
-      } finally {
-        setSaving(false);
       }
+      setSaving(false);
     },
     [account.hasPassword, current, next, router]
   );
@@ -532,9 +492,9 @@ function PasswordGroup({ account }: { account: Account }) {
       </form>
     </Group>
   );
-}
+};
 
-function DangerGroup({ email }: { email: string }) {
+const DangerGroup = ({ email }: { email: string }) => {
   const navigate = useNavigate();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -562,12 +522,12 @@ function DangerGroup({ email }: { email: string }) {
       try {
         await deleteAccount({ data: { confirm: typed } });
         track("account_deleted");
-        await authClient.signOut().catch(() => undefined);
+        await authClient.signOut().catch(() => null);
         toast.success(m.settings_deleted());
         await router.invalidate();
         navigate({ to: "/" });
-      } catch (err) {
-        toast.error((err as Error).message || m.settings_save_failed());
+      } catch (error) {
+        toast.error((error as Error).message || m.settings_save_failed());
         setDeleting(false);
       }
     },
@@ -614,4 +574,52 @@ function DangerGroup({ email }: { email: string }) {
       </AlertDialog>
     </Group>
   );
-}
+};
+
+const Settings = () => {
+  const { viewer, account } = routeApi.useLoaderData();
+  useEffect(() => {
+    track("settings_opened");
+  }, []);
+  return (
+    <div className="flex min-h-dvh flex-col">
+      <SiteHeader viewer={viewer} />
+      {/* rr-block: account details never appear in session replays. */}
+      <main className="rr-block mx-auto w-full max-w-[720px] flex-1 px-4 pt-8 pb-24 sm:px-6 sm:pt-12">
+        <h1 className="text-[28px] font-semibold tracking-[-0.03em] sm:text-[32px]">
+          {m.settings_title()}
+        </h1>
+        <div className="mt-8 space-y-10">
+          <ProfileGroup account={account} />
+          <PasswordGroup account={account} />
+          <Group title={m.settings_preferences()}>
+            <Row label={m.settings_language()}>
+              <LanguageSelect />
+            </Row>
+            <Row label={m.settings_theme()}>
+              <ThemeSwitcher />
+            </Row>
+          </Group>
+          <DangerGroup email={account.email} />
+        </div>
+      </main>
+      <SiteFooter />
+    </div>
+  );
+};
+
+export const Route = createFileRoute("/settings")({
+  loader: async () => {
+    const viewer = await getViewer();
+    if (!viewer || viewer.isAnonymous) {
+      throw redirect({ to: "/signup" });
+    }
+    const account = await getAccount();
+    if (!account) {
+      throw redirect({ to: "/signup" });
+    }
+    return { viewer, account };
+  },
+  head: () => ({ meta: [{ title: m.settings_meta_title() }] }),
+  component: Settings,
+});

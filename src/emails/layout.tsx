@@ -27,18 +27,17 @@ export interface ActionEmailProps {
 }
 
 const INK = "#0a0a0a";
-const SCHEME = /^https?:\/\//;
+const SCHEME = /^https?:\/\//u;
 const MUTED = "#737373";
 
-/** One layout for every account email: logo, heading, text, one button. */
-export function ActionEmail({
+export const ActionEmail = ({
   title,
   body,
   button,
   url,
   origin,
   locale,
-}: ActionEmailProps) {
+}: ActionEmailProps) => {
   const t = { locale };
   return (
     <Html dir={locale === "ar" ? "rtl" : "ltr"} lang={locale}>
@@ -112,4 +111,4 @@ export function ActionEmail({
       </Body>
     </Html>
   );
-}
+};

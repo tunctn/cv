@@ -1,6 +1,12 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+  getRouteApi,
+} from "@tanstack/react-router";
 import { useCallback } from "react";
 import { z } from "zod";
+
 import {
   fmtCompact,
   fmtDate,
@@ -21,6 +27,8 @@ import { listAdminUsage } from "#/lib/admin/functions";
 import { cn } from "#/lib/utils";
 import { m } from "#/paraglide/messages.js";
 
+const routeApi = getRouteApi("/admin/usage");
+
 const search = z.object({
   kind: z.enum(["all", "chat", "translate", "faq"]).optional(),
   userId: z.string().optional(),
@@ -30,22 +38,14 @@ const search = z.object({
   id: z.string().optional(),
 });
 
-export const Route = createFileRoute("/admin/usage")({
-  validateSearch: search,
-  // Opening a request's detail doesn't reload the table.
-  loaderDeps: ({ search: { id: _open, ...s } }) => s,
-  loader: ({ deps }) => listAdminUsage({ data: deps }),
-  component: Usage,
-});
-
 type Kind = "all" | "chat" | "translate" | "faq";
 
 /** Tool names shown in a row; the detail panel has all of them. */
 const MAX_TOOLS = 2;
 
-function Usage() {
-  const data = Route.useLoaderData();
-  const s = Route.useSearch();
+const Usage = () => {
+  const data = routeApi.useLoaderData();
+  const s = routeApi.useSearch();
   const navigate = useNavigate({ from: "/admin/usage" });
   const clearUser = useCallback(
     () =>
@@ -91,7 +91,7 @@ function Usage() {
       <PageTitle description={m.admin_usage_body()} title={m.admin_nav_usage()}>
         {s.userId ? (
           <button
-            className="cursor-pointer rounded-full bg-foreground/[0.06] px-3 py-1.5 text-[13px]"
+            className="bg-foreground/[0.06] cursor-pointer rounded-full px-3 py-1.5 text-[13px]"
             onClick={clearUser}
             type="button"
           >
@@ -149,7 +149,7 @@ function Usage() {
           {data.rows.map((r) => (
             <tr
               className={cn(
-                "relative hover:bg-foreground/[0.03]",
+                "hover:bg-foreground/[0.03] relative",
                 s.id === r.id && "bg-foreground/[0.05]"
               )}
               key={r.id}
@@ -224,14 +224,14 @@ function Usage() {
                   <span className="flex gap-1">
                     {r.tools.slice(0, MAX_TOOLS).map((tool) => (
                       <span
-                        className="rounded-[6px] bg-foreground/[0.05] px-1.5 py-0.5 font-mono text-[11.5px] text-muted-foreground"
+                        className="bg-foreground/[0.05] text-muted-foreground rounded-[6px] px-1.5 py-0.5 font-mono text-[11.5px]"
                         key={tool}
                       >
                         {tool}
                       </span>
                     ))}
                     {r.tools.length > MAX_TOOLS ? (
-                      <span className="px-1 py-0.5 text-[11.5px] text-muted-foreground">
+                      <span className="text-muted-foreground px-1 py-0.5 text-[11.5px]">
                         {`+${r.tools.length - MAX_TOOLS}`}
                       </span>
                     ) : null}
@@ -252,4 +252,12 @@ function Usage() {
       </Panel>
     </>
   );
-}
+};
+
+export const Route = createFileRoute("/admin/usage")({
+  validateSearch: search,
+  // Opening a request's detail doesn't reload the table.
+  loaderDeps: ({ search: { id: _open, ...s } }) => s,
+  loader: ({ deps }) => listAdminUsage({ data: deps }),
+  component: Usage,
+});

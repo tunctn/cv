@@ -1,4 +1,4 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute, notFound, getRouteApi } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 import { z } from "zod";
 
@@ -6,6 +6,30 @@ import { PagedCv } from "#/components/cv/paged";
 import { PAPER_SIZES, resolveStyle } from "#/lib/cv/engine";
 import { getPrintCv } from "#/lib/cv/print";
 import { getTemplate } from "#/lib/cv/templates";
+
+const routeApi = getRouteApi("/print/$id");
+
+const PrintPage = () => {
+  const { template, data } = routeApi.useLoaderData();
+  const def = getTemplate(template);
+  const paper = PAPER_SIZES[resolveStyle(def, data).paper];
+  const { breaks } = routeApi.useSearch();
+  const [pages, setPages] = useState(0);
+  const onReady = useCallback((n: number) => setPages(n), []);
+  return (
+    <div
+      className="cv-print w-fit"
+      data-cv-pages={pages || undefined}
+      data-cv-ready={pages ? "" : undefined}
+      dir="ltr"
+    >
+      <style>
+        {`@page { size: ${paper.width}px ${paper.height}px; margin: 0 } html, body { margin: 0; background: white } .cv-print .cv-sheet:not(:last-child) { break-after: page }`}
+      </style>
+      <PagedCv breaks={breaks} cv={data} def={def} onReady={onReady} />
+    </div>
+  );
+};
 
 export const Route = createFileRoute("/print/$id")({
   validateSearch: z.object({
@@ -26,26 +50,3 @@ export const Route = createFileRoute("/print/$id")({
   head: () => ({ meta: [{ name: "robots", content: "noindex" }] }),
   component: PrintPage,
 });
-
-/** Exactly the editor's pages, one per printed sheet. The exporter waits for data-cv-ready. */
-function PrintPage() {
-  const { template, data } = Route.useLoaderData();
-  const def = getTemplate(template);
-  const paper = PAPER_SIZES[resolveStyle(def, data).paper];
-  const { breaks } = Route.useSearch();
-  const [pages, setPages] = useState(0);
-  const onReady = useCallback((n: number) => setPages(n), []);
-  return (
-    <div
-      className="cv-print w-fit"
-      data-cv-pages={pages || undefined}
-      data-cv-ready={pages ? "" : undefined}
-      dir="ltr"
-    >
-      <style>
-        {`@page { size: ${paper.width}px ${paper.height}px; margin: 0 } html, body { margin: 0; background: white } .cv-print .cv-sheet:not(:last-child) { break-after: page }`}
-      </style>
-      <PagedCv breaks={breaks} cv={data} def={def} onReady={onReady} />
-    </div>
-  );
-}

@@ -3,11 +3,12 @@ import { FONTS } from "#/lib/cv/fonts";
 import type { CV } from "#/lib/cv/schema";
 import { TEMPLATES } from "#/lib/cv/templates";
 import { ENGLISH_NAMES } from "#/lib/i18n";
-import { isLocale, type Locale } from "#/paraglide/runtime.js";
+import { isLocale } from "#/paraglide/runtime.js";
+import type { Locale } from "#/paraglide/runtime.js";
+
 import type { Account } from "./cv-tools";
 
-/** Which language to chat in and which to write the CV in. */
-function languageRules(cv: CV, locale: Locale) {
+const languageRules = (cv: CV, locale: Locale) => {
   const ui = `${ENGLISH_NAMES[locale]} (${locale})`;
   const stored =
     cv.language && isLocale(cv.language)
@@ -20,15 +21,28 @@ function languageRules(cv: CV, locale: Locale) {
 - Write your chat replies in the user's interface language, ${ui}, unless the user writes to you in another language; then answer in theirs.
 - Write CV content (and section titles) in ${cvLang}; when the user imports an existing CV file into a CV without content, use the file's language instead. That can differ from the chat language. Never translate the CV unless the user asks for it.
 - If the user asks to translate the CV, translate all content and rename the section titles (custom sections included) to the new language.`;
-}
+};
 
-export function systemPrompt(
+const accountRules = (account?: Account | null) => {
+  if (!account) {
+    return "";
+  }
+  const name =
+    account.name && account.name !== account.email.split("@")[0]
+      ? account.name
+      : "";
+  return `The signed-in person: ${JSON.stringify({ name, email: account.email, hasPhoto: Boolean(account.image) })}.
+- When the CV has no name, email or photo, fill them from this account (photo: update_basics with useAccountPhoto: true) as part of your edit, without asking.
+- Anything the user tells you or that comes from their material (a pasted CV, file, website) wins over the account details: use theirs and replace the account values.`;
+};
+
+export const systemPrompt = (
   cv: CV,
   template: string,
   locale: Locale,
   account?: Account | null
-) {
-  return `You are a sharp, friendly CV editor inside a CV builder app. You help the user write a strong, honest CV and you edit it directly with your tools.
+) =>
+  `You are a sharp, friendly CV editor inside a CV builder app. You help the user write a strong, honest CV and you edit it directly with your tools.
 
 How to work:
 - Make changes with the tools; the user sees the CV update live. Don't paste the CV back into the chat.
@@ -66,18 +80,3 @@ Current template: ${template}.
 
 Current CV as JSON (photo omitted) (item ids are needed to edit or remove items):
 ${JSON.stringify({ ...cv, basics: { ...cv.basics, photo: cv.basics.photo ? "[photo set]" : "" } })}`;
-}
-
-/** Who is signed in: their details fill the CV header unless they gave others. */
-function accountRules(account?: Account | null) {
-  if (!account) {
-    return "";
-  }
-  const name =
-    account.name && account.name !== account.email.split("@")[0]
-      ? account.name
-      : "";
-  return `The signed-in person: ${JSON.stringify({ name, email: account.email, hasPhoto: Boolean(account.image) })}.
-- When the CV has no name, email or photo, fill them from this account (photo: update_basics with useAccountPhoto: true) as part of your edit, without asking.
-- Anything the user tells you or that comes from their material (a pasted CV, file, website) wins over the account details: use theirs and replace the account values.`;
-}

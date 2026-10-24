@@ -7,7 +7,8 @@ import {
 } from "@hugeicons-pro/core-stroke-rounded";
 import { useCallback, useRef } from "react";
 
-import { Icon, type IconSvgElement } from "#/components/icon";
+import { Icon } from "#/components/icon";
+import type { IconSvgElement } from "#/components/icon";
 import { m } from "#/paraglide/messages.js";
 
 interface Start {
@@ -50,23 +51,60 @@ const STARTS: Start[] = [
   },
 ];
 
-/**
- * A new chat: a short greeting and four ways to start, as a list of rows
- * sitting right above the composer.
- */
-export function ChatEmpty({
+const StartRow = ({
+  start,
+  onPrompt,
+  onFiles,
+}: {
+  start: Start;
+  onPrompt: (text: string) => void;
+  onFiles: () => void;
+}) => {
+  const run = useCallback(() => {
+    if (start.prompt) {
+      onPrompt(start.prompt());
+    } else {
+      onFiles();
+    }
+  }, [onFiles, onPrompt, start]);
+  return (
+    <li>
+      <button
+        className="group hover:bg-background flex w-full items-center gap-3 rounded-[14px] px-3 py-2.5 text-left transition-colors hover:shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
+        onClick={run}
+        type="button"
+      >
+        <span className="bg-background ring-foreground/[0.06] flex size-8 shrink-0 items-center justify-center rounded-full ring-1">
+          <Icon className="size-4" icon={start.icon} />
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="text-[14px] font-medium">{start.title()}</span>
+          <span className="text-muted-foreground truncate text-[12.5px]">
+            {start.hint()}
+          </span>
+        </span>
+        <Icon
+          className="text-muted-foreground/60 size-4 shrink-0 transition-transform duration-150 ease-out group-hover:translate-x-0.5"
+          icon={ArrowRight01Icon}
+        />
+      </button>
+    </li>
+  );
+};
+
+export const ChatEmpty = ({
   onPrompt,
   onFiles,
 }: {
   onPrompt: (text: string) => void;
   onFiles: (files: File[]) => void;
-}) {
+}) => {
   const input = useRef<HTMLInputElement>(null);
   const pickFiles = useCallback(() => input.current?.click(), []);
   const onChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files?.length) {
-        onFiles(Array.from(e.target.files));
+        onFiles([...e.target.files]);
         onPrompt(m.chat_start_import_prompt());
       }
       e.target.value = "";
@@ -77,14 +115,14 @@ export function ChatEmpty({
   return (
     <div className="cv-fade-in flex h-full flex-col justify-end gap-5 px-3 pb-3">
       <div className="flex flex-col gap-1 px-2">
-        <h2 className="font-semibold text-[20px] tracking-[-0.02em]">
+        <h2 className="text-[20px] font-semibold tracking-[-0.02em]">
           {m.chat_start_title()}
         </h2>
-        <p className="text-[14px] text-muted-foreground">
+        <p className="text-muted-foreground text-[14px]">
           {m.chat_start_body()}
         </p>
       </div>
-      <ul className="flex flex-col overflow-hidden rounded-[18px] bg-surface p-1">
+      <ul className="bg-surface flex flex-col overflow-hidden rounded-[18px] p-1">
         {STARTS.map((s) => (
           <StartRow
             key={s.id}
@@ -104,45 +142,4 @@ export function ChatEmpty({
       />
     </div>
   );
-}
-
-function StartRow({
-  start,
-  onPrompt,
-  onFiles,
-}: {
-  start: Start;
-  onPrompt: (text: string) => void;
-  onFiles: () => void;
-}) {
-  const run = useCallback(() => {
-    if (start.prompt) {
-      onPrompt(start.prompt());
-    } else {
-      onFiles();
-    }
-  }, [onFiles, onPrompt, start]);
-  return (
-    <li>
-      <button
-        className="group flex w-full items-center gap-3 rounded-[14px] px-3 py-2.5 text-left transition-colors hover:bg-background hover:shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
-        onClick={run}
-        type="button"
-      >
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-background ring-1 ring-foreground/[0.06]">
-          <Icon className="size-4" icon={start.icon} />
-        </span>
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="font-medium text-[14px]">{start.title()}</span>
-          <span className="truncate text-[12.5px] text-muted-foreground">
-            {start.hint()}
-          </span>
-        </span>
-        <Icon
-          className="size-4 shrink-0 text-muted-foreground/60 transition-transform duration-150 ease-out group-hover:translate-x-0.5"
-          icon={ArrowRight01Icon}
-        />
-      </button>
-    </li>
-  );
-}
+};

@@ -38,18 +38,17 @@ export interface UsageNumbers {
   webSearches: number;
 }
 
-/** Price for a model id, also matching dated ids like gpt-5.4-mini-2026-03-05. */
-export function priceFor(model: string) {
+export const priceFor = (model: string) => {
   if (OPENAI_PRICES[model]) {
     return OPENAI_PRICES[model];
   }
   const [base] = Object.keys(OPENAI_PRICES)
     .filter((id) => model.startsWith(`${id}-`))
-    .sort((a, b) => b.length - a.length);
+    .toSorted((a, b) => b.length - a.length);
   return base ? OPENAI_PRICES[base] : FALLBACK;
-}
+};
 
-export function costUsd(model: string, u: UsageNumbers) {
+export const costUsd = (model: string, u: UsageNumbers) => {
   const p = priceFor(model);
   const cached = Math.min(u.cachedInputTokens, u.inputTokens);
   return (
@@ -59,4 +58,4 @@ export function costUsd(model: string, u: UsageNumbers) {
       1_000_000 +
     u.webSearches * WEB_SEARCH_PER_CALL
   );
-}
+};

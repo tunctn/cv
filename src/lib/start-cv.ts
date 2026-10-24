@@ -8,15 +8,14 @@ import { track } from "#/lib/track";
 import { m } from "#/paraglide/messages.js";
 import { getLocale } from "#/paraglide/runtime.js";
 
-/** Creates a CV, signing in as a guest first when nobody is signed in. */
-export async function startCv({
+export const startCv = async ({
   from,
   ...opts
 }: {
   template?: TemplateId;
   sample?: boolean;
   from?: "import";
-} = {}) {
+} = {}) => {
   const { data } = await authClient.getSession();
   const guest =
     !data || Boolean((data.user as { isAnonymous?: boolean }).isAnonymous);
@@ -53,4 +52,4 @@ export async function startCv({
     }
     throw error;
   }
-}
+};

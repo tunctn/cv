@@ -9,7 +9,7 @@ import { serverEnv } from "#/lib/server/env";
  */
 let client: Promise<{ aws: AwsClient; base: string }> | null = null;
 
-function bucket() {
+const bucket = () => {
   client ??= (async () => {
     const [account, name, key, secret] = await Promise.all([
       serverEnv("R2_ACCOUNT_ID"),
@@ -32,21 +32,21 @@ function bucket() {
     };
   })();
   return client;
-}
+};
 
-async function send(key: string, init?: RequestInit) {
+const send = async (key: string, init?: RequestInit) => {
   const { aws, base } = await bucket();
   return aws.fetch(
     `${base}${key.split("/").map(encodeURIComponent).join("/")}`,
     init
   );
-}
+};
 
-export async function putObject(
+export const putObject = async (
   key: string,
   body: Uint8Array | ArrayBuffer,
   contentType: string
-) {
+) => {
   const res = await send(key, {
     method: "PUT",
     body: body as BodyInit,
@@ -55,10 +55,9 @@ export async function putObject(
   if (!res.ok) {
     throw new Error(`R2 put ${key}: ${res.status}`);
   }
-}
+};
 
-/** The object's bytes and type, or null when it doesn't exist. */
-export async function getObject(key: string) {
+export const getObject = async (key: string) => {
   const res = await send(key);
   if (res.status === 404) {
     return null;
@@ -70,9 +69,9 @@ export async function getObject(key: string) {
     body: new Uint8Array(await res.arrayBuffer()),
     contentType: res.headers.get("content-type") ?? "application/octet-stream",
   };
-}
+};
 
-export async function deleteObjects(keys: string[]) {
+export const deleteObjects = async (keys: string[]) => {
   // R2 deletes are idempotent; a missing key is fine.
   await Promise.all(
     keys.map(async (key) => {
@@ -82,7 +81,7 @@ export async function deleteObjects(keys: string[]) {
       }
     })
   );
-}
+};
 
 export const fileKey = (id: string) => `files/${id}`;
 export const avatarKey = (userId: string) => `avatars/${userId}`;

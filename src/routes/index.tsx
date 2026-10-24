@@ -2,9 +2,14 @@ import {
   ArrowRight01Icon,
   ArrowRight02Icon,
 } from "@hugeicons-pro/core-stroke-rounded";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  getRouteApi,
+} from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+
 import { ImportButton, useCvImport } from "#/components/dashboard/import-cv";
 import { Icon } from "#/components/icon";
 import { Faq } from "#/components/marketing/faq";
@@ -20,25 +25,21 @@ import { SiteHeader } from "#/components/site-header";
 import { Button } from "#/components/ui/button";
 import { getViewer } from "#/lib/cv/functions";
 import { sampleCv } from "#/lib/cv/sample";
-import { TEMPLATES, type TemplateId } from "#/lib/cv/templates";
+import { TEMPLATES } from "#/lib/cv/templates";
+import type { TemplateId } from "#/lib/cv/templates";
 import { isGuestLimit } from "#/lib/guest";
 import { startCv } from "#/lib/start-cv";
 import { track } from "#/lib/track";
 import { m } from "#/paraglide/messages.js";
 
-export const Route = createFileRoute("/")({
-  loader: async () => {
-    const viewer = await getViewer();
-    return { viewer, sample: sampleCv() };
-  },
-  component: Home,
-});
+const routeApi = getRouteApi("/");
 
-function Home() {
-  const { viewer, sample } = Route.useLoaderData();
+const Home = () => {
+  const { viewer, sample } = routeApi.useLoaderData();
   const navigate = useNavigate();
   const [busy, setBusy] = useState<string | null>(null);
   const importer = useCvImport();
+  const handleImport = importer.run;
 
   const start = useCallback(
     async (key: string, opts: { template?: TemplateId; sample?: boolean }) => {
@@ -51,9 +52,9 @@ function Home() {
       try {
         const { id } = await startCv(opts);
         await navigate({ to: "/cv/$id", params: { id } });
-      } catch (e) {
-        if (!isGuestLimit(e)) {
-          toast.error((e as Error).message);
+      } catch (error) {
+        if (!isGuestLimit(error)) {
+          toast.error((error as Error).message);
         }
         setBusy(null);
       }
@@ -77,10 +78,10 @@ function Home() {
             className="home-dots pointer-events-none absolute inset-x-0 top-0 h-[760px]"
           />
           <div className="relative mx-auto max-w-[760px] px-4 pt-20 text-center sm:px-6 sm:pt-32">
-            <h1 className="home-rise text-balance font-semibold text-[40px] leading-[1.04] tracking-[-0.035em] sm:text-[60px]">
+            <h1 className="home-rise text-[40px] leading-[1.04] font-semibold tracking-[-0.035em] text-balance sm:text-[60px]">
               {m.home_title()}
             </h1>
-            <p className="home-rise mx-auto mt-5 max-w-[540px] text-pretty text-[17px] text-muted-foreground leading-relaxed [--rise-delay:60ms] sm:text-[18px]">
+            <p className="home-rise text-muted-foreground mx-auto mt-5 max-w-[540px] text-[17px] leading-relaxed text-pretty [--rise-delay:60ms] sm:text-[18px]">
               {m.home_lede()}
             </p>
             <div className="home-rise mt-8 flex flex-wrap items-center justify-center gap-2 [--rise-delay:120ms]">
@@ -96,7 +97,7 @@ function Home() {
                 busy={importer.busy}
                 disabled={!!busy}
                 label={m.import_cta_home()}
-                onFile={importer.run}
+                onFile={handleImport}
                 size="lg"
                 variant="secondary"
               />
@@ -116,7 +117,7 @@ function Home() {
             </div>
           </div>
           {/* The fade spans the full width so only the bottom edge softens; the window's shadow is never cut at the sides. */}
-          <div className="relative mt-14 px-5 pt-1 [mask-image:linear-gradient(to_bottom,#000_50%,transparent_94%)] sm:mt-24 sm:px-10">
+          <div className="relative mt-14 [mask-image:linear-gradient(to_bottom,#000_50%,transparent_94%)] px-5 pt-1 sm:mt-24 sm:px-10">
             <HeroApp sample={sample} />
           </div>
         </section>
@@ -149,4 +150,12 @@ function Home() {
       </Reveal>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/")({
+  loader: async () => {
+    const viewer = await getViewer();
+    return { viewer, sample: sampleCv() };
+  },
+  component: Home,
+});

@@ -5,10 +5,10 @@ import {
   SparklesIcon,
   StopIcon,
 } from "@hugeicons-pro/core-stroke-rounded";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef } from "react";
+
 import { Icon } from "#/components/icon";
 import { FileType, getFileType } from "#/components/reui/file-type";
-
 import {
   InputGroup,
   InputGroupAddon,
@@ -18,9 +18,143 @@ import {
 import { ATTACH_ACCEPT } from "#/lib/attachments";
 import { cn } from "#/lib/utils";
 import { m } from "#/paraglide/messages.js";
-import { type ChatContext, formatBytes } from "./shared";
 
-export function Composer({
+import { formatBytes } from "./shared";
+import type { ChatContext } from "./shared";
+
+const ChipCard = ({
+  media,
+  title,
+  meta,
+  onRemove,
+  removeLabel,
+}: {
+  media: React.ReactNode;
+  title: string;
+  meta: React.ReactNode;
+  onRemove: () => void;
+  removeLabel: string;
+}) => (
+  <div className="group/chip bg-background ring-foreground/[0.08] relative flex max-w-[260px] items-center gap-2.5 rounded-[12px] p-1.5 pr-7 ring-1">
+    {media}
+    <span className="min-w-0">
+      <span className="block truncate text-[12.5px] leading-tight font-medium">
+        {title}
+      </span>
+      <span className="text-muted-foreground block truncate text-[11.5px] leading-tight">
+        {meta}
+      </span>
+    </span>
+    <button
+      aria-label={removeLabel}
+      className="text-muted-foreground hover:bg-surface hover:text-foreground absolute top-1/2 right-1.5 flex size-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full transition-colors"
+      onClick={onRemove}
+      type="button"
+    >
+      <Icon className="size-3.5" icon={Cancel01Icon} />
+    </button>
+  </div>
+);
+
+const TILE = "size-8 shrink-0 rounded-[8px]";
+
+const ContextChip = ({
+  context,
+  onRemove,
+}: {
+  context: ChatContext;
+  onRemove: (id: string) => void;
+}) => {
+  const remove = useCallback(
+    () => onRemove(context.id),
+    [context.id, onRemove]
+  );
+  const n = context.fields.length;
+  return (
+    <ChipCard
+      media={
+        context.image ? (
+          <img
+            alt=""
+            className={`${TILE} ring-foreground/[0.06] bg-white object-cover object-top ring-1`}
+            height={32}
+            src={context.image}
+            width={32}
+          />
+        ) : (
+          <span
+            className={`${TILE} bg-surface flex items-center justify-center`}
+          >
+            <Icon
+              className="text-muted-foreground size-4"
+              icon={SparklesIcon}
+            />
+          </span>
+        )
+      }
+      meta={
+        n > 0
+          ? (n === 1 ? m.chat_fields_one : m.chat_fields_other)({ count: n })
+          : m.chat_part_of_cv()
+      }
+      onRemove={remove}
+      removeLabel={m.chat_remove({ name: context.label })}
+      title={context.label}
+    />
+  );
+};
+
+const FileChip = ({
+  file,
+  onRemove,
+}: {
+  file: File;
+  onRemove: (file: File) => void;
+}) => {
+  const remove = useCallback(() => onRemove(file), [file, onRemove]);
+  const preview = file.type.startsWith("image/");
+  // The object URL lives exactly as long as the <img> showing it.
+  const previewRef = useCallback(
+    (img: HTMLImageElement | null) => {
+      if (!img) {
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      img.src = url;
+      return () => URL.revokeObjectURL(url);
+    },
+    [file]
+  );
+  const kind = getFileType(file.name || file.type);
+  return (
+    <ChipCard
+      media={
+        preview ? (
+          <img
+            alt=""
+            className={`${TILE} object-cover`}
+            height={32}
+            ref={previewRef}
+            width={32}
+          />
+        ) : (
+          <FileType className="shrink-0" size="sm" type={kind} />
+        )
+      }
+      meta={
+        <>
+          <span className="tracking-wide uppercase">{String(kind)}</span> ·{" "}
+          {formatBytes(file.size)}
+        </>
+      }
+      onRemove={remove}
+      removeLabel={m.chat_remove({ name: file.name })}
+      title={file.name}
+    />
+  );
+};
+
+export const Composer = ({
   value,
   onChange,
   onSubmit,
@@ -46,13 +180,13 @@ export function Composer({
   onAddFiles: (files: File[]) => void;
   onRemoveFile: (file: File) => void;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
-}) {
+}) => {
   const fileInput = useRef<HTMLInputElement>(null);
   const pickFiles = useCallback(() => fileInput.current?.click(), []);
   const handleFiles = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files) {
-        onAddFiles(Array.from(e.target.files));
+        onAddFiles([...e.target.files]);
       }
       e.target.value = "";
     },
@@ -92,7 +226,7 @@ export function Composer({
         tabIndex={-1}
         type="file"
       />
-      <InputGroup className="rounded-[16px] border-transparent bg-surface transition-colors focus-within:bg-surface-2 has-[[data-slot=input-group-control]:focus-visible]:border-transparent has-disabled:bg-surface has-disabled:opacity-100 has-[[data-slot=input-group-control]:focus-visible]:ring-0">
+      <InputGroup className="bg-surface focus-within:bg-surface-2 has-disabled:bg-surface rounded-[16px] border-transparent transition-colors has-disabled:opacity-100 has-[[data-slot=input-group-control]:focus-visible]:border-transparent has-[[data-slot=input-group-control]:focus-visible]:ring-0">
         {hasChips ? (
           <InputGroupAddon
             align="block-start"
@@ -126,7 +260,7 @@ export function Composer({
         <InputGroupAddon align="block-end" className="px-2 pb-2">
           <InputGroupButton
             aria-label={m.chat_attach()}
-            className="rounded-full text-muted-foreground hover:bg-black/5 hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground rounded-full hover:bg-black/5"
             onClick={pickFiles}
             size="icon-sm"
             title={m.chat_attach_title()}
@@ -170,134 +304,4 @@ export function Composer({
       </InputGroup>
     </form>
   );
-}
-
-function ChipCard({
-  media,
-  title,
-  meta,
-  onRemove,
-  removeLabel,
-}: {
-  media: React.ReactNode;
-  title: string;
-  meta: React.ReactNode;
-  onRemove: () => void;
-  removeLabel: string;
-}) {
-  return (
-    <div className="group/chip relative flex max-w-[260px] items-center gap-2.5 rounded-[12px] bg-background p-1.5 pr-7 ring-1 ring-foreground/[0.08]">
-      {media}
-      <span className="min-w-0">
-        <span className="block truncate font-medium text-[12.5px] leading-tight">
-          {title}
-        </span>
-        <span className="block truncate text-[11.5px] text-muted-foreground leading-tight">
-          {meta}
-        </span>
-      </span>
-      <button
-        aria-label={removeLabel}
-        className="absolute top-1/2 right-1.5 flex size-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
-        onClick={onRemove}
-        type="button"
-      >
-        <Icon className="size-3.5" icon={Cancel01Icon} />
-      </button>
-    </div>
-  );
-}
-
-const TILE = "size-8 shrink-0 rounded-[8px]";
-
-function ContextChip({
-  context,
-  onRemove,
-}: {
-  context: ChatContext;
-  onRemove: (id: string) => void;
-}) {
-  const remove = useCallback(
-    () => onRemove(context.id),
-    [context.id, onRemove]
-  );
-  const n = context.fields.length;
-  return (
-    <ChipCard
-      media={
-        context.image ? (
-          <img
-            alt=""
-            className={`${TILE} bg-white object-cover object-top ring-1 ring-foreground/[0.06]`}
-            height={32}
-            src={context.image}
-            width={32}
-          />
-        ) : (
-          <span
-            className={`${TILE} flex items-center justify-center bg-surface`}
-          >
-            <Icon
-              className="size-4 text-muted-foreground"
-              icon={SparklesIcon}
-            />
-          </span>
-        )
-      }
-      meta={
-        n > 0
-          ? (n === 1 ? m.chat_fields_one : m.chat_fields_other)({ count: n })
-          : m.chat_part_of_cv()
-      }
-      onRemove={remove}
-      removeLabel={m.chat_remove({ name: context.label })}
-      title={context.label}
-    />
-  );
-}
-
-function FileChip({
-  file,
-  onRemove,
-}: {
-  file: File;
-  onRemove: (file: File) => void;
-}) {
-  const remove = useCallback(() => onRemove(file), [file, onRemove]);
-  const [preview, setPreview] = useState<string | null>(null);
-  useEffect(() => {
-    if (!file.type.startsWith("image/")) {
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
-  const kind = getFileType(file.name || file.type);
-  return (
-    <ChipCard
-      media={
-        preview ? (
-          <img
-            alt=""
-            className={`${TILE} object-cover`}
-            height={32}
-            src={preview}
-            width={32}
-          />
-        ) : (
-          <FileType className="shrink-0" size="sm" type={kind} />
-        )
-      }
-      meta={
-        <>
-          <span className="uppercase tracking-wide">{String(kind)}</span> ·{" "}
-          {formatBytes(file.size)}
-        </>
-      }
-      onRemove={remove}
-      removeLabel={m.chat_remove({ name: file.name })}
-      title={file.name}
-    />
-  );
-}
+};

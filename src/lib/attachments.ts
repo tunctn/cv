@@ -31,22 +31,17 @@ export const ATTACH_ACCEPT = [
   ...KNOWN,
 ].join(",");
 
-/**
- * The file's type, from the browser or else its extension (browsers often
- * leave .md, .csv or .yaml without one). Null if we can't use it.
- */
-export function attachType(file: File): string | null {
+export const attachType = (file: File): string | null => {
   if (KNOWN.has(file.type)) {
     return file.type;
   }
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
   return ATTACH_TYPES[ext] ?? null;
-}
+};
 
-/** The same file with its type filled in, so the server reads it right. */
-export function withAttachType(file: File): File {
+export const withAttachType = (file: File): File => {
   const type = attachType(file);
   return type && type !== file.type
     ? new File([file], file.name, { type, lastModified: file.lastModified })
     : file;
-}
+};

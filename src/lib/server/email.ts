@@ -3,20 +3,20 @@ import { Resend } from "resend";
 
 import { ActionEmail } from "#/emails/layout";
 import { m } from "#/paraglide/messages.js";
-import { getLocale, type Locale } from "#/paraglide/runtime.js";
+import { getLocale } from "#/paraglide/runtime.js";
+import type { Locale } from "#/paraglide/runtime.js";
 
-const TRAILING_SLASH = /\/$/;
+const TRAILING_SLASH = /\/$/u;
 const FROM = process.env.EMAIL_FROM ?? "SmileCV <noreply@emails.smilecv.com>";
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
-function origin() {
-  return (process.env.BETTER_AUTH_URL ?? "https://smilecv.com").replace(
+const origin = () =>
+  (process.env.BETTER_AUTH_URL ?? "https://smilecv.com").replace(
     TRAILING_SLASH,
     ""
   );
-}
 
 export type AccountEmail = "reset" | "verify" | "change" | "delete";
 
@@ -47,15 +47,10 @@ const COPY = {
   },
 } as const;
 
-/**
- * Send one of the account emails (password reset, email confirmation…) in
- * the visitor's language. Without RESEND_API_KEY (local dev) the link is
- * logged instead, so the flows still work.
- */
-export async function sendAccountEmail(
+export const sendAccountEmail = async (
   kind: AccountEmail,
   opts: { to: string; url: string; email?: string; locale?: Locale }
-) {
+) => {
   const locale = opts.locale ?? getLocale();
   const t = { locale };
   const copy = COPY[kind];
@@ -84,4 +79,4 @@ export async function sendAccountEmail(
     console.error("[email]", kind, error);
     throw new Error(error.message);
   }
-}
+};

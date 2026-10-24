@@ -3,7 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { serverEnv as env } from "#/lib/server/env";
 
 const DEFAULT_SCRIPT = "https://analytics.wust.co/script.js";
-const FILE_NAME = /[^/]*$/;
+const FILE_NAME = /[^/]*$/u;
 
 /**
  * Umami settings for the page: UMAMI_WEBSITE_ID (off when unset) and

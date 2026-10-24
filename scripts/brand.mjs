@@ -1,16 +1,13 @@
 // Builds every logo asset from the single master image: brand/logo.png.
 // Replace that file and re-run (it also runs before `dev` and `build`).
 import { mkdirSync } from "node:fs";
+
 import sharp from "sharp";
 
 const MASTER = "brand/logo.png";
 const OUT = "public/brand";
 
-/**
- * Apple-style continuous-corner squircle (superellipse, n = 5) as an SVG path,
- * filling a size×size box.
- */
-function squircle(size, n = 5, steps = 360) {
+const squircle = (size, n = 5, steps = 360) => {
   const r = size / 2;
   const pts = [];
   for (let i = 0; i < steps; i += 1) {
@@ -22,9 +19,9 @@ function squircle(size, n = 5, steps = 360) {
     pts.push(`${x.toFixed(2)},${y.toFixed(2)}`);
   }
   return `M${pts.join("L")}Z`;
-}
+};
 
-async function masked(size, file) {
+const masked = async (size, file) => {
   const mask = Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><path d="${squircle(size)}" fill="#fff"/></svg>`
   );
@@ -33,7 +30,7 @@ async function masked(size, file) {
     .composite([{ input: mask, blend: "dest-in" }])
     .png()
     .toFile(`${OUT}/${file}`);
-}
+};
 
 mkdirSync(OUT, { recursive: true });
 await Promise.all([

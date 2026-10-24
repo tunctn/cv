@@ -1,12 +1,7 @@
 const SIZE = 256;
 export const MAX_AVATAR_INPUT = 5 * 1024 * 1024;
 
-/**
- * Crops an image file to a centred square and scales it to 256×256, as a
- * WebP data URL (JPEG where the browser can't encode WebP). Rejects files the
- * browser can't decode (e.g. HEIC outside Safari).
- */
-export async function squareAvatar(file: File): Promise<string> {
+export const squareAvatar = async (file: File): Promise<string> => {
   const url = URL.createObjectURL(file);
   try {
     const img = new Image();
@@ -39,4 +34,4 @@ export async function squareAvatar(file: File): Promise<string> {
   } finally {
     URL.revokeObjectURL(url);
   }
-}
+};

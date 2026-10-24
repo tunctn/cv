@@ -7,16 +7,16 @@ const MAX_REDIRECTS = 4;
 const TIMEOUT_MS = 12_000;
 
 const PRIVATE_V4 = [
-  /^0\./,
-  /^10\./,
-  /^127\./,
-  /^169\.254\./,
-  /^172\.(1[6-9]|2\d|3[01])\./,
-  /^192\.168\./,
-  /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./,
+  /^0\./u,
+  /^10\./u,
+  /^127\./u,
+  /^169\.254\./u,
+  /^172\.(?:1[6-9]|2\d|3[01])\./u,
+  /^192\.168\./u,
+  /^100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./u,
 ];
 
-function isPrivate(ip: string) {
+const isPrivate = (ip: string) => {
   if (isIP(ip) === 6) {
     const v = ip.toLowerCase();
     return (
@@ -29,10 +29,9 @@ function isPrivate(ip: string) {
     );
   }
   return PRIVATE_V4.some((r) => r.test(ip));
-}
+};
 
-/** Only public http(s) hosts: no localhost, private ranges or metadata IPs. */
-async function assertPublic(url: URL) {
+const assertPublic = async (url: URL) => {
   if (!(url.protocol === "http:" || url.protocol === "https:")) {
     throw new Error("Only http and https links can be read.");
   }
@@ -42,19 +41,21 @@ async function assertPublic(url: URL) {
   if (addresses.length === 0 || addresses.some((a) => isPrivate(a.address))) {
     throw new Error("That address can't be read.");
   }
-}
+};
 
-const SCRIPT_STYLE = /<(script|style|noscript|svg|template)\b[\s\S]*?<\/\1>/gi;
-const COMMENTS = /<!--[\s\S]*?-->/g;
+const SCRIPT_STYLE =
+  /<(?<tag>script|style|noscript|svg|template)\b[\s\S]*?<\/\k<tag>>/giu;
+const COMMENTS = /<!--[\s\S]*?-->/gu;
 const BLOCK_END =
-  /<\/(p|div|li|h[1-6]|section|article|header|footer|tr|br)>|<br\s*\/?>/gi;
-const TAGS = /<[^>]+>/g;
-const SPACES = /[ \t\f\v]+/g;
-const BLANK_LINES = /\n\s*\n\s*\n+/g;
-const TITLE = /<title[^>]*>([\s\S]*?)<\/title>/i;
-const LINK = /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  /<\/(?:p|div|li|h[1-6]|section|article|header|footer|tr|br)>|<br\s*\/?>/giu;
+const TAGS = /<[^>]+>/gu;
+const SPACES = /[ \t\f\v]+/gu;
+const BLANK_LINES = /\n\s*\n\s*\n+/gu;
+const TITLE = /<title[^>]*>(?<title>[\s\S]*?)<\/title>/iu;
+const LINK =
+  /<a\b[^>]*href=["'](?<href>[^"']+)["'][^>]*>(?<label>[\s\S]*?)<\/a>/giu;
 const CF_EMAIL =
-  /<[^>]*data-cfemail=["']([0-9a-f]+)["'][^>]*>[\s\S]*?<\/[^>]+>/gi;
+  /<[^>]*data-cfemail=["'](?<hex>[0-9a-f]+)["'][^>]*>[\s\S]*?<\/[^>]+>/giu;
 
 const ENTITIES: Record<string, string> = {
   "&amp;": "&",
@@ -66,91 +67,69 @@ const ENTITIES: Record<string, string> = {
   "&nbsp;": " ",
 };
 
-function decodeEntities(s: string) {
-  return s
-    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, n) =>
+const decodeEntities = (s: string) =>
+  s
+    .replaceAll(/&#(?<dec>\d+);/gu, (_, n) => String.fromCodePoint(Number(n)))
+    .replaceAll(/&#x(?<hex>[0-9a-f]+);/giu, (_, n) =>
       String.fromCodePoint(Number.parseInt(n, 16))
     )
-    .replace(/&[a-z]+;|&#39;/gi, (e) => ENTITIES[e.toLowerCase()] ?? e);
-}
+    .replaceAll(/&[a-z]+;|&#39;/giu, (e) => ENTITIES[e.toLowerCase()] ?? e);
 
-/** Cloudflare hides e-mail addresses as XOR-encoded hex; decode them. */
-function decodeCfEmail(hex: string) {
+const decodeCfEmail = (hex: string) => {
   const key = Number.parseInt(hex.slice(0, 2), 16);
   let out = "";
   for (let i = 2; i < hex.length; i += 2) {
-    // biome-ignore lint/suspicious/noBitwiseOperators: the encoding is XOR
-    out += String.fromCharCode(Number.parseInt(hex.slice(i, i + 2), 16) ^ key);
+    // oxlint-disable-next-line no-bitwise -- the encoding is XOR
+    out += String.fromCodePoint(Number.parseInt(hex.slice(i, i + 2), 16) ^ key);
   }
   return out;
-}
+};
 
-function htmlToText(html: string) {
-  return decodeEntities(
+const htmlToText = (html: string) =>
+  decodeEntities(
     html
-      .replace(CF_EMAIL, (_, hex: string) => decodeCfEmail(hex))
-      .replace(SCRIPT_STYLE, " ")
-      .replace(COMMENTS, " ")
-      .replace(BLOCK_END, "\n")
-      .replace(TAGS, " ")
+      .replaceAll(CF_EMAIL, (_, hex: string) => decodeCfEmail(hex))
+      .replaceAll(SCRIPT_STYLE, " ")
+      .replaceAll(COMMENTS, " ")
+      .replaceAll(BLOCK_END, "\n")
+      .replaceAll(TAGS, " ")
   )
-    .replace(SPACES, " ")
+    .replaceAll(SPACES, " ")
     .split("\n")
     .map((l) => l.trim())
     .join("\n")
-    .replace(BLANK_LINES, "\n\n")
+    .replaceAll(BLANK_LINES, "\n\n")
     .trim();
-}
 
-/**
- * Fetch a public web page and return its readable text and links, so the
- * AI can build a CV from a personal site, a portfolio or a job ad.
- */
-export async function readUrl(raw: string) {
-  let url = new URL(raw.startsWith("http") ? raw : `https://${raw}`);
-  let res: Response | null = null;
-  for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
-    // Redirects are followed one by one so every hop is checked.
-    // biome-ignore lint/performance/noAwaitInLoops: sequential on purpose
-    await assertPublic(url);
-    res = await fetch(url, {
-      redirect: "manual",
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-      headers: {
-        "user-agent":
-          "Mozilla/5.0 (compatible; SmileCVBot/1.0; +https://smilecv.com)",
-        accept: "text/html,text/plain;q=0.9,*/*;q=0.5",
-      },
-    });
-    const next = res.headers.get("location");
-    if (res.status >= 300 && res.status < 400 && next) {
-      url = new URL(next, url);
-      continue;
-    }
-    break;
+/** Fetch `url`, following redirects one by one so every hop is checked. */
+const fetchChecked = async (
+  url: URL,
+  hop = 0
+): Promise<{ res: Response; url: URL }> => {
+  await assertPublic(url);
+  const res = await fetch(url, {
+    redirect: "manual",
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+    headers: {
+      "user-agent":
+        "Mozilla/5.0 (compatible; SmileCVBot/1.0; +https://smilecv.com)",
+      accept: "text/html,text/plain;q=0.9,*/*;q=0.5",
+    },
+  });
+  const next = res.headers.get("location");
+  if (hop < MAX_REDIRECTS && res.status >= 300 && res.status < 400 && next) {
+    return fetchChecked(new URL(next, url), hop + 1);
   }
-  if (!res?.ok) {
-    throw new Error(`The page answered with status ${res?.status ?? "?"}.`);
-  }
-  const type = res.headers.get("content-type") ?? "";
-  if (!(type.includes("html") || type.includes("text"))) {
-    throw new Error("That link isn't a web page.");
-  }
-  const body = (await res.text()).slice(0, MAX_BYTES);
-  if (!type.includes("html")) {
-    return {
-      url: url.href,
-      title: "",
-      text: body.slice(0, MAX_TEXT),
-      links: [],
-    };
-  }
+  return { res, url };
+};
+
+const pageLinks = (body: string, base: URL) => {
   const links: { text: string; url: string }[] = [];
-  for (const [, href, label] of body.matchAll(LINK)) {
+  for (const { groups } of body.matchAll(LINK)) {
+    const { href = "", label = "" } = groups ?? {};
     try {
-      const target = new URL(decodeEntities(href), url);
-      const text = htmlToText(label).replace(/\s+/g, " ").slice(0, 80);
+      const target = new URL(decodeEntities(href), base);
+      const text = htmlToText(label).replaceAll(/\s+/gu, " ").slice(0, 80);
       if (target.protocol.startsWith("http") && text) {
         links.push({ text, url: target.href });
       }
@@ -161,10 +140,34 @@ export async function readUrl(raw: string) {
       break;
     }
   }
+  return links;
+};
+
+export const readUrl = async (raw: string) => {
+  const { res, url } = await fetchChecked(
+    new URL(raw.startsWith("http") ? raw : `https://${raw}`)
+  );
+  if (!res.ok) {
+    throw new Error(`The page answered with status ${res.status}.`);
+  }
+  const type = res.headers.get("content-type") ?? "";
+  if (!(type.includes("html") || type.includes("text"))) {
+    throw new Error("That link isn't a web page.");
+  }
+  const content = await res.text();
+  const body = content.slice(0, MAX_BYTES);
+  if (!type.includes("html")) {
+    return {
+      url: url.href,
+      title: "",
+      text: body.slice(0, MAX_TEXT),
+      links: [],
+    };
+  }
   return {
     url: url.href,
-    title: htmlToText(body.match(TITLE)?.[1] ?? ""),
+    title: htmlToText(TITLE.exec(body)?.groups?.title ?? ""),
     text: htmlToText(body).slice(0, MAX_TEXT),
-    links,
+    links: pageLinks(body, url),
   };
-}
+};

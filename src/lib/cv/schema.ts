@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import { m } from "#/paraglide/messages.js";
 import type { Locale } from "#/paraglide/runtime.js";
 
@@ -103,13 +104,10 @@ export const customSectionSchema = z.object({
 export type CustomKey = `custom:${string}`;
 export type OrderKey = SectionKey | CustomKey;
 
-export function customKey(id: string): CustomKey {
-  return `custom:${id}`;
-}
+export const customKey = (id: string): CustomKey => `custom:${id}`;
 
-export function isCustomKey(key: string): key is CustomKey {
-  return key.startsWith("custom:");
-}
+export const isCustomKey = (key: string): key is CustomKey =>
+  key.startsWith("custom:");
 
 export const SECTION_LABELS: Record<SectionKey, string> = {
   experience: "Experience",
@@ -186,72 +184,73 @@ export type Link = z.infer<typeof linkSchema>;
 export type CustomItem = z.infer<typeof customItemSchema>;
 export type CustomSection = z.infer<typeof customSectionSchema>;
 
-export function newId() {
-  return Math.random().toString(36).slice(2, 10);
-}
+export const newId = () => Math.random().toString(36).slice(2, 10);
 
-export function emptyExperience(): Experience {
-  return {
-    id: newId(),
-    company: "",
-    role: "",
-    location: "",
-    start: "",
-    end: "",
-    meta: "",
-    description: "",
-    highlights: [],
-  };
-}
+export const emptyExperience = (): Experience => ({
+  id: newId(),
+  company: "",
+  role: "",
+  location: "",
+  start: "",
+  end: "",
+  meta: "",
+  description: "",
+  highlights: [],
+});
 
-export function emptyEducation(): Education {
-  return {
-    id: newId(),
-    school: "",
-    degree: "",
-    location: "",
-    start: "",
-    end: "",
-    meta: "",
-    description: "",
-  };
-}
+export const emptyEducation = (): Education => ({
+  id: newId(),
+  school: "",
+  degree: "",
+  location: "",
+  start: "",
+  end: "",
+  meta: "",
+  description: "",
+});
 
-export function emptySkillItem(): SkillItem {
-  return { id: newId(), title: "", text: "" };
-}
+export const emptySkillItem = (): SkillItem => ({
+  id: newId(),
+  title: "",
+  text: "",
+});
 
-export function emptySkill(): Skill {
-  return { id: newId(), name: "", columns: 1, items: [] };
-}
+export const emptySkill = (): Skill => ({
+  id: newId(),
+  name: "",
+  columns: 1,
+  items: [],
+});
 
-export function emptyProject(): Project {
-  return { id: newId(), name: "", url: "", description: "", highlights: [] };
-}
+export const emptyProject = (): Project => ({
+  id: newId(),
+  name: "",
+  url: "",
+  description: "",
+  highlights: [],
+});
 
-export function emptyLanguage(): Language {
-  return { id: newId(), name: "", level: "" };
-}
+export const emptyLanguage = (): Language => ({
+  id: newId(),
+  name: "",
+  level: "",
+});
 
-export function emptyCustomItem(): CustomItem {
-  return {
-    id: newId(),
-    title: "",
-    subtitle: "",
-    date: "",
-    location: "",
-    description: "",
-    highlights: [],
-  };
-}
+export const emptyCustomItem = (): CustomItem => ({
+  id: newId(),
+  title: "",
+  subtitle: "",
+  date: "",
+  location: "",
+  description: "",
+  highlights: [],
+});
 
-export function emptyCustomSection(title?: string): CustomSection {
-  return {
-    id: newId(),
-    title: title ?? m.cv_new_section(),
-    items: [emptyCustomItem()],
-  };
-}
+export const emptyCustomSection = (title?: string): CustomSection => ({
+  id: newId(),
+  title: title ?? m.cv_new_section(),
+  items: [emptyCustomItem()],
+});
 
 export const EMPTY_ITEM: Record<SectionKey, () => { id: string }> = {
   experience: emptyExperience,
@@ -261,35 +260,31 @@ export const EMPTY_ITEM: Record<SectionKey, () => { id: string }> = {
   languages: emptyLanguage,
 };
 
-/** A blank CV; with a locale, its headings are in that language and it remembers it. */
-export function emptyCv(locale?: Locale): CV {
-  return {
-    ...(locale ? { language: locale } : {}),
-    basics: {
-      name: "",
-      headline: "",
-      email: "",
-      phone: "",
-      location: "",
-      website: "",
-      summary: "",
-      photo: "",
-      links: [],
-    },
-    style: {},
-    labels: locale ? localizedLabels(locale) : { ...DEFAULT_LABELS },
-    experience: [],
-    education: [],
-    skills: [],
-    projects: [],
-    languages: [],
-    custom: [],
-    sectionOrder: [...SECTION_KEYS],
-  };
-}
+export const emptyCv = (locale?: Locale): CV => ({
+  ...(locale ? { language: locale } : {}),
+  basics: {
+    name: "",
+    headline: "",
+    email: "",
+    phone: "",
+    location: "",
+    website: "",
+    summary: "",
+    photo: "",
+    links: [],
+  },
+  style: {},
+  labels: locale ? localizedLabels(locale) : { ...DEFAULT_LABELS },
+  experience: [],
+  education: [],
+  skills: [],
+  projects: [],
+  languages: [],
+  custom: [],
+  sectionOrder: [...SECTION_KEYS],
+});
 
-/** Fills in anything missing so older or partial documents still render. */
-export function normalizeCv(input: unknown): CV {
+export const normalizeCv = (input: unknown): CV => {
   const base = emptyCv();
   const raw = (input ?? {}) as Partial<CV>;
   const custom: CustomSection[] = (
@@ -316,14 +311,14 @@ export function normalizeCv(input: unknown): CV {
     ...(typeof raw.language === "string" ? { language: raw.language } : {}),
     basics: {
       ...base.basics,
-      ...(raw.basics ?? {}),
+      ...raw.basics,
       links: raw.basics?.links ?? [],
     },
-    style: { ...(raw.style ?? {}) },
+    style: { ...raw.style },
     // Missing headings fall back to the CV's language, else the UI locale.
     labels: {
       ...localizedLabels(cvLocale(raw.language)),
-      ...(raw.labels ?? {}),
+      ...raw.labels,
     },
     experience: (raw.experience ?? []).map((e) => ({
       ...emptyExperience(),
@@ -343,4 +338,4 @@ export function normalizeCv(input: unknown): CV {
     custom,
     sectionOrder: order,
   };
-}
+};

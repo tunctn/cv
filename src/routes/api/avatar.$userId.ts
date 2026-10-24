@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+
 import { avatarKey, getObject } from "#/lib/server/storage";
 
 /** A user's uploaded profile picture. Public; the URL changes on every upload. */

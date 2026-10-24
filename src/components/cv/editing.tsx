@@ -2,21 +2,21 @@ import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { DragDropVerticalIcon } from "@hugeicons-pro/core-stroke-rounded";
 import {
   createContext,
-  type ReactNode,
   useCallback,
   useContext,
   useLayoutEffect,
   useRef,
   useState,
 } from "react";
-import { Icon } from "#/components/icon";
+import type { ReactNode } from "react";
 
+import { Icon } from "#/components/icon";
 import type { Path } from "#/lib/cv/paths";
 import { Rich } from "#/lib/cv/templates/shared";
 import { cn } from "#/lib/utils";
 import { m } from "#/paraglide/messages.js";
 
-const TRAILING_NEWLINE = /\n$/;
+const TRAILING_NEWLINE = /\n$/u;
 
 export interface DropTarget {
   after: boolean;
@@ -44,11 +44,9 @@ export interface EditorApi {
 
 export const EditorContext = createContext<EditorApi | null>(null);
 
-export function useEditor() {
-  return useContext(EditorContext);
-}
+export const useEditor = () => useContext(EditorContext);
 
-function caretOffset(el: HTMLElement) {
+const caretOffset = (el: HTMLElement) => {
   const sel = window.getSelection();
   if (!sel?.rangeCount) {
     return 0;
@@ -57,9 +55,9 @@ function caretOffset(el: HTMLElement) {
   range.selectNodeContents(el);
   range.setEnd(sel.getRangeAt(0).endContainer, sel.getRangeAt(0).endOffset);
   return range.toString().length;
-}
+};
 
-function placeCaret(el: HTMLElement, offset: number) {
+const placeCaret = (el: HTMLElement, offset: number) => {
   const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
   let left = offset;
   let node = walker.nextNode();
@@ -83,7 +81,7 @@ function placeCaret(el: HTMLElement, offset: number) {
   const sel = window.getSelection();
   sel?.removeAllRanges();
   sel?.addRange(range);
-}
+};
 
 interface FieldSelection {
   el: HTMLElement;
@@ -93,8 +91,7 @@ interface FieldSelection {
   text: string;
 }
 
-/** The text selection inside a rich (formattable) field, if there is one. */
-function richSelection(): FieldSelection | null {
+const richSelection = (): FieldSelection | null => {
   const sel = window.getSelection();
   const node = sel?.anchorNode;
   const el = (
@@ -111,20 +108,21 @@ function richSelection(): FieldSelection | null {
   return {
     el,
     path: el.dataset.editPath ?? "",
-    text: el.innerText,
+    text: el.textContent,
     start,
     end: start + range.toString().length,
   };
-}
+};
 
 export type Mark = "bold" | "italic" | "underline";
+
 const MARKERS: Record<Mark, string> = {
   bold: "**",
   italic: "*",
   underline: "__",
 };
 
-function isWrapped(s: FieldSelection, marker: string) {
+const isWrapped = (s: FieldSelection, marker: string) => {
   const before = s.text.slice(s.start - marker.length, s.start);
   const after = s.text.slice(s.end, s.end + marker.length);
   if (before !== marker || after !== marker) {
@@ -135,10 +133,9 @@ function isWrapped(s: FieldSelection, marker: string) {
     return s.text[s.start - 2] !== "*" && s.text[s.end + 1] !== "*";
   }
   return true;
-}
+};
 
-/** Which marks the current selection already has (for toolbar active states). */
-export function activeMarks(): Record<Mark, boolean> | null {
+export const activeMarks = (): Record<Mark, boolean> | null => {
   const s = richSelection();
   if (!s) {
     return null;
@@ -148,28 +145,20 @@ export function activeMarks(): Record<Mark, boolean> | null {
     italic: isWrapped(s, "*"),
     underline: isWrapped(s, "__"),
   };
-}
+};
 
-/** A saved selection, so it survives focus moving to e.g. a link URL input. */
-export function saveSelection() {
-  return richSelection();
-}
+export const saveSelection = () => richSelection();
 
-/** Turns the saved selection into a markdown link `[text](url)`. */
-export function applyLink(ed: EditorApi, s: FieldSelection, url: string) {
+export const applyLink = (ed: EditorApi, s: FieldSelection, url: string) => {
   const inner = s.text.slice(s.start, s.end);
   const next = `${s.text.slice(0, s.start)}[${inner}](${url.trim()})${s.text.slice(s.end)}`;
   s.el.textContent = next;
   ed.set(s.path, next);
-}
+};
 
 export type { FieldSelection };
 
-/**
- * Wraps (or unwraps) the selected text of the focused rich field in markdown
- * markers and writes it back. Returns false when there is nothing to format.
- */
-export function toggleMark(ed: EditorApi, mark: Mark) {
+export const toggleMark = (ed: EditorApi, mark: Mark) => {
   const s = richSelection();
   if (!s) {
     return false;
@@ -202,7 +191,7 @@ export function toggleMark(ed: EditorApi, mark: Mark) {
   ed.setActive({ path: s.path, caret: from + inner.length });
   ed.set(s.path, next);
   return true;
-}
+};
 
 interface FieldProps {
   className?: string;
@@ -215,33 +204,13 @@ interface FieldProps {
   value: string;
 }
 
-/** An editable text field on the CV. Plain text when printed. */
-export function E(props: FieldProps) {
-  const ed = useEditor();
-  if (!ed) {
-    return props.value ? (
-      <Display className={props.className} {...props} />
-    ) : null;
-  }
-  if (!ed.interactive) {
-    return (
-      <Display
-        {...props}
-        className={cn("cv-ph", props.className)}
-        placeholder={props.placeholder}
-      />
-    );
-  }
-  return <LiveField {...props} ed={ed} />;
-}
-
-function Display({
+const Display = ({
   value,
   rich,
   multiline,
   placeholder,
   className,
-}: FieldProps) {
+}: FieldProps) => {
   const content = rich ? <Rich text={value} /> : value;
   return (
     <span
@@ -251,9 +220,9 @@ function Display({
       {content}
     </span>
   );
-}
+};
 
-function LiveField({
+const LiveField = ({
   path,
   value,
   rich,
@@ -261,7 +230,7 @@ function LiveField({
   placeholder,
   className,
   ed,
-}: FieldProps & { ed: EditorApi }) {
+}: FieldProps & { ed: EditorApi }) => {
   const ref = useRef<HTMLSpanElement>(null);
   // While typing, React must not touch the DOM text, so the children are frozen.
   const [frozen, setFrozen] = useState<string | null>(null);
@@ -284,7 +253,7 @@ function LiveField({
     if (frozen === null || !el) {
       return;
     }
-    if (el.innerText.replace(TRAILING_NEWLINE, "") !== value) {
+    if (el.textContent.replace(TRAILING_NEWLINE, "") !== value) {
       const caret = Math.min(caretOffset(el), value.length);
       el.textContent = value;
       if (document.activeElement === el) {
@@ -307,7 +276,7 @@ function LiveField({
       return;
     }
     ed.setActive({ path, caret: caretOffset(el) });
-    ed.set(path, el.innerText.replace(TRAILING_NEWLINE, ""));
+    ed.set(path, el.textContent.replace(TRAILING_NEWLINE, ""));
   }, [ed, path]);
 
   const onBlur = useCallback(() => {
@@ -342,8 +311,7 @@ function LiveField({
 
   const showRich = frozen === null && rich;
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: a contentEditable text field; focus/blur/input are its native interactions
-    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: same as above
+    // oxlint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-element-interactions -- a contentEditable text field; focus/blur/input are its native interactions
     <span
       className={cn(
         "cv-ph cv-field",
@@ -366,7 +334,26 @@ function LiveField({
       {showRich ? <Rich text={value} /> : (frozen ?? value)}
     </span>
   );
-}
+};
+
+export const E = (props: FieldProps) => {
+  const ed = useEditor();
+  if (!ed) {
+    return props.value ? (
+      <Display className={props.className} {...props} />
+    ) : null;
+  }
+  if (!ed.interactive) {
+    return (
+      <Display
+        {...props}
+        className={cn("cv-ph", props.className)}
+        placeholder={props.placeholder}
+      />
+    );
+  }
+  return <LiveField {...props} ed={ed} />;
+};
 
 interface SelProps {
   as?: "div" | "li" | "section" | "article" | "header";
@@ -378,21 +365,7 @@ interface SelProps {
   path: Path;
 }
 
-/** A selectable (and, with `list`, draggable) region of the CV. */
-export function Sel(props: SelProps) {
-  const ed = useEditor();
-  const Tag = props.as ?? "div";
-  if (!ed?.interactive) {
-    return (
-      <Tag className={props.className} data-sel={ed ? props.path : undefined}>
-        {props.children}
-      </Tag>
-    );
-  }
-  return <LiveSel {...props} ed={ed} />;
-}
-
-function LiveSel({
+const LiveSel = ({
   path,
   list,
   label,
@@ -400,17 +373,20 @@ function LiveSel({
   children,
   as,
   ed,
-}: SelProps & { ed: EditorApi }) {
+}: SelProps & { ed: EditorApi }) => {
   const Tag = as ?? "div";
   const data = { list, label };
-  const drag = useDraggable({ id: path, data, disabled: !list });
-  const drop = useDroppable({ id: path, data, disabled: !list });
-  const setRef = useCallback(
-    (el: HTMLElement | null) => {
-      drop.setNodeRef(el);
-    },
-    [drop.setNodeRef]
-  );
+  const {
+    attributes: dragAttributes,
+    isDragging,
+    listeners: dragListeners,
+    setNodeRef: setDragRef,
+  } = useDraggable({ id: path, data, disabled: !list });
+  const { setNodeRef: setDropRef } = useDroppable({
+    id: path,
+    data,
+    disabled: !list,
+  });
   // Only stop the canvas from deselecting here. Selecting happens on click,
   // after the browser has placed the caret: selecting can reveal empty fields
   // and shift the layout, which must not move the click target mid-press.
@@ -430,21 +406,21 @@ function LiveSel({
   return (
     <Tag
       className={cn("cv-sel group/sel relative", className)}
-      data-dragging={drag.isDragging || undefined}
+      data-dragging={isDragging || undefined}
       data-sel={path}
       data-selected={selected || undefined}
       onClick={onClick}
       onMouseDown={onMouseDown}
-      ref={setRef}
+      ref={setDropRef}
     >
       {list ? (
         <button
           aria-label={m.cv_drag({ label })}
           className="cv-handle"
-          ref={drag.setNodeRef}
+          ref={setDragRef}
           type="button"
-          {...drag.listeners}
-          {...drag.attributes}
+          {...dragListeners}
+          {...dragAttributes}
         >
           <Icon icon={DragDropVerticalIcon} />
         </button>
@@ -457,4 +433,17 @@ function LiveSel({
       {children}
     </Tag>
   );
-}
+};
+
+export const Sel = (props: SelProps) => {
+  const ed = useEditor();
+  const Tag = props.as ?? "div";
+  if (!ed?.interactive) {
+    return (
+      <Tag className={props.className} data-sel={ed ? props.path : undefined}>
+        {props.children}
+      </Tag>
+    );
+  }
+  return <LiveSel {...props} ed={ed} />;
+};

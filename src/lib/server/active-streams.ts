@@ -10,11 +10,10 @@ interface ActiveStream {
 
 const active = new Map<string, ActiveStream>();
 
-/** Read a copy of a chat's SSE stream to the end, recording every chunk. */
-export async function recordStream(
+export const recordStream = async (
   chatId: string,
   stream: ReadableStream<string>
-) {
+) => {
   const entry: ActiveStream = { chunks: [], listeners: new Set() };
   active.set(chatId, entry);
   try {
@@ -32,10 +31,9 @@ export async function recordStream(
       active.delete(chatId);
     }
   }
-}
+};
 
-/** The reply so far plus whatever follows, or null if nothing is running. */
-export function replayStream(chatId: string): ReadableStream<string> | null {
+export const replayStream = (chatId: string): ReadableStream<string> | null => {
   const entry = active.get(chatId);
   if (!entry) {
     return null;
@@ -61,12 +59,11 @@ export function replayStream(chatId: string): ReadableStream<string> | null {
       }
     },
   });
-}
+};
 
 const aborts = new Map<string, AbortController>();
 
-/** The abort switch for a chat's running reply (replaces any older one). */
-export function abortControllerFor(chatId: string) {
+export const abortControllerFor = (chatId: string) => {
   aborts.get(chatId)?.abort();
   const controller = new AbortController();
   aborts.set(chatId, controller);
@@ -76,16 +73,14 @@ export function abortControllerFor(chatId: string) {
     }
   });
   return controller;
-}
+};
 
-/** Stop generating the chat's reply (the user pressed Stop). */
-export function stopStream(chatId: string) {
+export const stopStream = (chatId: string) => {
   aborts.get(chatId)?.abort();
-}
+};
 
-/** Forget the switch once a reply finished on its own. */
-export function releaseAbort(chatId: string, controller: AbortController) {
+export const releaseAbort = (chatId: string, controller: AbortController) => {
   if (aborts.get(chatId) === controller) {
     aborts.delete(chatId);
   }
-}
+};

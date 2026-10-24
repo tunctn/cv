@@ -9,13 +9,12 @@
  *   ... node scripts/translate-sample.mjs de tr        # only these locales
  */
 import { readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import nodePath from "node:path";
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const root = nodePath.join(import.meta.dirname, "..");
 const MODEL = process.env.OPENAI_MODEL || "gpt-5.4-mini";
 const KEY = process.env.OPENAI_API_KEY;
-const DIR = join(root, "src/lib/cv/samples");
+const DIR = nodePath.join(root, "src/lib/cv/samples");
 
 const NAMES = {
   zh: "Simplified Chinese (mainland China)",
@@ -61,8 +60,7 @@ Rules:
 - Natural, plain CV language a native recruiter would expect. Same length and tone as the English.
 - Return only the JSON object.`;
 
-/** Every non-empty string field a reader sees, as path → value. */
-function flatten(cv) {
+const flatten = (cv) => {
   const out = {};
   const put = (path, v) => {
     if (typeof v === "string" && v.trim()) {
@@ -93,37 +91,37 @@ function flatten(cv) {
     ],
   };
   for (const [section, keys] of Object.entries(fields)) {
-    cv[section].forEach((e, i) => {
+    for (const [i, e] of cv[section].entries()) {
       for (const k of keys) {
         put(`${section}.${i}.${k}`, e[k]);
       }
-      (e.highlights ?? []).forEach((h, j) => {
+      for (const [j, h] of (e.highlights ?? []).entries()) {
         put(`${section}.${i}.highlights.${j}`, h);
-      });
-    });
+      }
+    }
   }
-  cv.skills.forEach((s, i) => {
+  for (const [i, s] of cv.skills.entries()) {
     put(`skills.${i}.name`, s.name);
-    s.items.forEach((it, j) => {
+    for (const [j, it] of s.items.entries()) {
       put(`skills.${i}.items.${j}.title`, it.title);
       put(`skills.${i}.items.${j}.text`, it.text);
-    });
-  });
+    }
+  }
   return out;
-}
+};
 
-function setPath(obj, path, value) {
+const setPath = (obj, path, value) => {
   const parts = path.split(".");
   let cur = obj;
   for (const p of parts.slice(0, -1)) {
     cur = cur[p];
   }
   cur[parts.at(-1)] = value;
-}
+};
 
-const BOLD = /\*\*/g;
+const BOLD = /\*\*/gu;
 
-async function localise(locale, entries) {
+const localise = async (locale, entries) => {
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -143,21 +141,20 @@ async function localise(locale, entries) {
     }),
   });
   if (!res.ok) {
-    throw new Error(
-      `OpenAI ${res.status}: ${(await res.text()).slice(0, 300)}`
-    );
+    const body = await res.text();
+    throw new Error(`OpenAI ${res.status}: ${body.slice(0, 300)}`);
   }
   const data = await res.json();
   return JSON.parse(data.choices[0].message.content);
-}
+};
 
-async function main() {
+const main = async () => {
   if (!KEY) {
     console.error("Set OPENAI_API_KEY.");
     process.exit(1);
   }
   const only = process.argv.slice(2);
-  const en = JSON.parse(await readFile(join(DIR, "en.json"), "utf8"));
+  const en = JSON.parse(await readFile(nodePath.join(DIR, "en.json"), "utf-8"));
   const entries = flatten(en);
   const targets = Object.keys(NAMES).filter(
     (l) => only.length === 0 || only.includes(l)
@@ -182,13 +179,13 @@ async function main() {
         }
       }
       const messages = JSON.parse(
-        await readFile(join(root, `messages/${locale}.json`), "utf8")
+        await readFile(nodePath.join(root, `messages/${locale}.json`), "utf-8")
       );
       for (const k of LABEL_KEYS) {
         cv.labels[k] = messages[`cv_label_${k}`] ?? cv.labels[k];
       }
       await writeFile(
-        join(DIR, `${locale}.json`),
+        nodePath.join(DIR, `${locale}.json`),
         `${JSON.stringify(cv, null, 2)}\n`
       );
       console.log(
@@ -196,6 +193,6 @@ async function main() {
       );
     })
   );
-}
+};
 
 await main();

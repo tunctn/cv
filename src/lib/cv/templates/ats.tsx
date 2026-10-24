@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { E, Sel } from "#/components/cv/editing";
 import { m } from "#/paraglide/messages.js";
+
 import type { Block, TemplateDef } from "../engine";
 import type { CustomSection, CV, SectionKey } from "../schema";
 import {
@@ -21,11 +22,7 @@ interface Part {
   value: string;
 }
 
-/**
- * "Company, City | Jan 2020 – Present" as one plain text line, so parsers
- * read it in order. Empty parts are left out (shown while editing).
- */
-function Meta({
+const Meta = ({
   p,
   parts,
   range,
@@ -33,7 +30,7 @@ function Meta({
   p: string;
   parts: Part[];
   range?: { start: string; end: string };
-}) {
+}) => {
   const expanded = useExpanded(p);
   const shown = parts.filter((x) => x.value || expanded);
   const dates = range
@@ -70,9 +67,9 @@ function Meta({
       ))}
     </p>
   );
-}
+};
 
-function Bullets({ list, items }: { list: string; items: string[] }) {
+const Bullets = ({ list, items }: { list: string; items: string[] }) => {
   if (items.length === 0) {
     return null;
   }
@@ -81,7 +78,7 @@ function Bullets({ list, items }: { list: string; items: string[] }) {
       {items.map((h, j) => (
         <Sel
           as="li"
-          // biome-ignore lint/suspicious/noArrayIndexKey: bullets are plain strings; position is their identity
+          // oxlint-disable-next-line react/no-array-index-key -- bullets are plain strings; position is their identity
           key={j}
           label={m.cv_sel_bullet()}
           list={list}
@@ -97,26 +94,24 @@ function Bullets({ list, items }: { list: string; items: string[] }) {
       ))}
     </ul>
   );
-}
+};
 
-function Description({ p, value }: { p: string; value: string }) {
-  return (
-    <Show path={p} value={value}>
-      <p className="mt-[2px]">
-        <E
-          multiline
-          path={`${p}.description`}
-          placeholder={m.cv_ph_description()}
-          rich
-          value={value}
-        />
-      </p>
-    </Show>
-  );
-}
+const Description = ({ p, value }: { p: string; value: string }) => (
+  <Show path={p} value={value}>
+    <p className="mt-[2px]">
+      <E
+        multiline
+        path={`${p}.description`}
+        placeholder={m.cv_ph_description()}
+        rich
+        value={value}
+      />
+    </p>
+  </Show>
+);
 
-function experienceBlocks(cv: CV): Block[] {
-  return cv.experience.map((e, i) => {
+const experienceBlocks = (cv: CV): Block[] =>
+  cv.experience.map((e, i) => {
     const p = `experience.${i}`;
     return {
       key: e.id,
@@ -152,10 +147,9 @@ function experienceBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function educationBlocks(cv: CV): Block[] {
-  return cv.education.map((e, i) => {
+const educationBlocks = (cv: CV): Block[] =>
+  cv.education.map((e, i) => {
     const p = `education.${i}`;
     return {
       key: e.id,
@@ -190,10 +184,9 @@ function educationBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function skillBlocks(cv: CV): Block[] {
-  return cv.skills.map((s, i) => {
+const skillBlocks = (cv: CV): Block[] =>
+  cv.skills.map((s, i) => {
     const p = `skills.${i}`;
     return {
       key: s.id,
@@ -222,10 +215,9 @@ function skillBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function projectBlocks(cv: CV): Block[] {
-  return cv.projects.map((pr, i) => {
+const projectBlocks = (cv: CV): Block[] =>
+  cv.projects.map((pr, i) => {
     const p = `projects.${i}`;
     return {
       key: pr.id,
@@ -251,14 +243,13 @@ function projectBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function languageBlocks(cv: CV): Block[] {
-  return [{ key: "languages", gap: 6, node: <InlineLanguages cv={cv} /> }];
-}
+const languageBlocks = (cv: CV): Block[] => [
+  { key: "languages", gap: 6, node: <InlineLanguages cv={cv} /> },
+];
 
-function customBlocks(section: CustomSection, list: string): Block[] {
-  return section.items.map((it, i) => {
+const customBlocks = (section: CustomSection, list: string): Block[] =>
+  section.items.map((it, i) => {
     const p = `${list}.items.${i}`;
     return {
       key: it.id,
@@ -294,7 +285,6 @@ function customBlocks(section: CustomSection, list: string): Block[] {
       ),
     };
   });
-}
 
 const SECTION_BLOCKS: Record<SectionKey, (cv: CV) => Block[]> = {
   experience: experienceBlocks,
@@ -304,13 +294,11 @@ const SECTION_BLOCKS: Record<SectionKey, (cv: CV) => Block[]> = {
   languages: languageBlocks,
 };
 
-function Heading({ children }: { children: ReactNode }) {
-  return (
-    <h2 className="border-[#222] border-b pb-[2px] font-bold text-[13px] text-[var(--cv-accent)] uppercase tracking-[0.04em]">
-      {children}
-    </h2>
-  );
-}
+const Heading = ({ children }: { children: ReactNode }) => (
+  <h2 className="border-b border-[#222] pb-[2px] text-[13px] font-bold tracking-[0.04em] text-[var(--cv-accent)] uppercase">
+    {children}
+  </h2>
+);
 
 /**
  * Built for applicant tracking systems: one column, standard headings, every
@@ -336,7 +324,7 @@ export const ats: TemplateDef = {
         key: "header",
         node: (
           <Sel label={m.cv_sel_details()} path="basics">
-            <h1 className="font-bold text-[24px] text-[var(--cv-accent)] leading-tight">
+            <h1 className="text-[24px] leading-tight font-bold text-[var(--cv-accent)]">
               <E
                 path="basics.name"
                 placeholder={m.cv_ph_your_name()}
@@ -388,23 +376,25 @@ export const ats: TemplateDef = {
       });
     }
     for (const key of orderedSections(cv)) {
-      blocks.push({
-        key: `title-${key}`,
-        gap: 16,
-        keepWithNext: true,
-        node: (
-          <Sel
-            label={m.cv_sel_section()}
-            list="sections"
-            path={`sections.${key}`}
-          >
-            <Heading>
-              <E placeholder={m.cv_ph_section()} {...sectionLabel(cv, key)} />
-            </Heading>
-          </Sel>
-        ),
-      });
-      blocks.push(...sectionBlocks(cv, key, SECTION_BLOCKS, customBlocks));
+      blocks.push(
+        {
+          key: `title-${key}`,
+          gap: 16,
+          keepWithNext: true,
+          node: (
+            <Sel
+              label={m.cv_sel_section()}
+              list="sections"
+              path={`sections.${key}`}
+            >
+              <Heading>
+                <E placeholder={m.cv_ph_section()} {...sectionLabel(cv, key)} />
+              </Heading>
+            </Sel>
+          ),
+        },
+        ...sectionBlocks(cv, key, SECTION_BLOCKS, customBlocks)
+      );
     }
     return { main: blocks };
   },

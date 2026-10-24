@@ -27,13 +27,14 @@ export interface Consent {
   functional: boolean;
 }
 
-function cookieValue(cookies: string, name: string) {
-  const match = cookies.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : null;
-}
+const cookieValue = (cookies: string, name: string) => {
+  const match = cookies.match(
+    new RegExp(`(?:^|;\\s*)${name}=(?<value>[^;]*)`, "u")
+  );
+  return match ? decodeURIComponent(match.groups?.value ?? "") : null;
+};
 
-/** Reads the choice from a Cookie header or document.cookie. */
-export function readConsent(cookies: string | null | undefined): Consent {
+export const readConsent = (cookies: string | null | undefined): Consent => {
   const v = cookieValue(cookies ?? "", CONSENT_COOKIE);
   const parts = (v ?? "").split(",");
   return {
@@ -41,38 +42,35 @@ export function readConsent(cookies: string | null | undefined): Consent {
     functional: parts.includes("functional"),
     analytics: parts.includes("analytics"),
   };
-}
+};
 
-/** True when functional cookies may be set (browser only). */
-export function functionalAllowed() {
-  return (
-    typeof document !== "undefined" && readConsent(document.cookie).functional
-  );
-}
+export const functionalAllowed = () =>
+  typeof document !== "undefined" && readConsent(document.cookie).functional;
 
-function expire(name: string) {
-  // biome-ignore lint/suspicious/noDocumentCookie: removing a plain cookie
+const expire = (name: string) => {
+  // oxlint-disable-next-line unicorn/no-document-cookie -- removing a plain cookie
   document.cookie = `${name}=; path=/; max-age=0; samesite=lax`;
-}
+};
 
-/** True when replays and the pseudonymous visitor id may be used (browser only). */
-export function analyticsAllowed() {
-  return (
-    typeof document !== "undefined" && readConsent(document.cookie).analytics
-  );
-}
+/** Subscribe to saved consent choices (for useSyncExternalStore). */
+export const subscribeConsent = (onChange: () => void) => {
+  window.addEventListener(CONSENT_CHANGED, onChange);
+  return () => window.removeEventListener(CONSENT_CHANGED, onChange);
+};
 
-/** Stores the choice; withdrawing consent removes the functional cookies. */
-export function saveConsent(functional: boolean, analytics = functional) {
+export const analyticsAllowed = () =>
+  typeof document !== "undefined" && readConsent(document.cookie).analytics;
+
+export const saveConsent = (functional: boolean, analytics = functional) => {
   const value =
     [functional && "functional", analytics && "analytics"]
       .filter(Boolean)
       .join(",") || "essential";
-  // biome-ignore lint/suspicious/noDocumentCookie: the consent choice is a plain cookie the server also reads
+  // oxlint-disable-next-line unicorn/no-document-cookie -- the consent choice is a plain cookie the server also reads
   document.cookie = `${CONSENT_COOKIE}=${value}; path=/; max-age=${YEAR}; samesite=lax`;
   window.dispatchEvent(new Event(CONSENT_CHANGED));
   if (!functional) {
     expire(DEVICE_COOKIE);
     expire(LAST_LOGIN_COOKIE);
   }
-}
+};

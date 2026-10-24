@@ -22,7 +22,8 @@ import { m } from "#/paraglide/messages.js";
 import { getLocale, isLocale } from "#/paraglide/runtime.js";
 
 import { sampleCv } from "./sample";
-import { type CV, cvSchema, emptyCv, normalizeCv } from "./schema";
+import { cvSchema, emptyCv, normalizeCv } from "./schema";
+import type { CV } from "./schema";
 import { TEMPLATE_IDS } from "./templates";
 
 export const getViewer = createServerFn({ method: "GET" }).handler(async () => {
@@ -65,12 +66,11 @@ export const getViewer = createServerFn({ method: "GET" }).handler(async () => {
   };
 });
 
-/** Guests may keep only a few CVs; signing up lifts the limit. */
-async function assertCanCreate(user: {
+const assertCanCreate = async (user: {
   id: string;
   isAnonymous?: boolean | null;
   emailVerified?: boolean | null;
-}) {
+}) => {
   const kind = limitKindFor(user);
   if (!kind) {
     return;
@@ -91,7 +91,7 @@ async function assertCanCreate(user: {
   if (!(await spendDevice(device, "cvs", GUEST_CV_LIMIT))) {
     throw new Error(GUEST_LIMIT);
   }
-}
+};
 
 export const getAuthOptions = createServerFn({ method: "GET" }).handler(
   async () => {
@@ -141,32 +141,6 @@ export const getCv = createServerFn({ method: "GET" })
       pages: row.pages,
       updatedAt: row.updatedAt.toISOString(),
     };
-  });
-
-export const createCv = createServerFn({ method: "POST" })
-  .validator(
-    z.object({
-      template: z.enum(TEMPLATE_IDS).optional(),
-      sample: z.boolean().optional(),
-      title: z.string().optional(),
-      /** The creator's UI locale; headings and title of a new CV use it. */
-      locale: z.string().optional(),
-    })
-  )
-  .handler(async ({ data }) => {
-    const user = await requireUser();
-    await assertCanCreate(user);
-    const locale =
-      data.locale && isLocale(data.locale) ? data.locale : getLocale();
-    const id = nanoid(12);
-    await db.insert(cvTable).values({
-      id,
-      userId: user.id,
-      title: data.title ?? m.cv_untitled({}, { locale }),
-      template: data.template ?? "classic",
-      data: data.sample ? sampleCv(locale) : withAccount(emptyCv(locale), user),
-    });
-    return { id };
   });
 
 export const updateCv = createServerFn({ method: "POST" })
@@ -223,11 +197,7 @@ export const deleteCv = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/**
- * A new CV starts with the account's name, email and photo (never for
- * guests, whose "name" is a placeholder). The person can change them.
- */
-function withAccount(
+const withAccount = (
   cv: CV,
   user: {
     name?: string | null;
@@ -235,7 +205,7 @@ function withAccount(
     image?: string | null;
     isAnonymous?: boolean | null;
   }
-): CV {
+): CV => {
   if (user.isAnonymous) {
     return cv;
   }
@@ -250,4 +220,30 @@ function withAccount(
       photo: cv.basics.photo || (user.image ?? ""),
     },
   };
-}
+};
+
+export const createCv = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      template: z.enum(TEMPLATE_IDS).optional(),
+      sample: z.boolean().optional(),
+      title: z.string().optional(),
+      /** The creator's UI locale; headings and title of a new CV use it. */
+      locale: z.string().optional(),
+    })
+  )
+  .handler(async ({ data }) => {
+    const user = await requireUser();
+    await assertCanCreate(user);
+    const locale =
+      data.locale && isLocale(data.locale) ? data.locale : getLocale();
+    const id = nanoid(12);
+    await db.insert(cvTable).values({
+      id,
+      userId: user.id,
+      title: data.title ?? m.cv_untitled({}, { locale }),
+      template: data.template ?? "classic",
+      data: data.sample ? sampleCv(locale) : withAccount(emptyCv(locale), user),
+    });
+    return { id };
+  });

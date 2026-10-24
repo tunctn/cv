@@ -1,6 +1,7 @@
-import type { CV } from "#/lib/cv/schema";
-import { SECTION_KEYS, type SectionKey } from "#/lib/cv/schema";
-import { getTemplate, type TemplateId } from "#/lib/cv/templates";
+import { SECTION_KEYS } from "#/lib/cv/schema";
+import type { CV, SectionKey } from "#/lib/cv/schema";
+import { getTemplate } from "#/lib/cv/templates";
+import type { TemplateId } from "#/lib/cv/templates";
 import { templateName } from "#/lib/cv/templates/copy";
 import { m } from "#/paraglide/messages.js";
 
@@ -18,17 +19,8 @@ const STYLE_LABELS: Record<string, () => string> = {
   padBottom: m.hist_changed_margins,
 };
 
-/** A short name for what changed between two versions of a CV. */
-export function describeChange(prev: Doc, next: Doc, paths: string[]) {
-  if (paths.length === 0) {
-    return m.hist_no_change();
-  }
-  const labels = new Set(paths.map((p) => labelForPath(prev, next, p)));
-  return labels.size === 1 ? [...labels][0] : m.hist_edited_cv();
-}
-
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one case per part of the CV
-function labelForPath(prev: Doc, next: Doc, path: string): string {
+// oxlint-disable-next-line complexity -- one case per part of the CV
+const labelForPath = (prev: Doc, next: Doc, path: string): string => {
   if (path === "template") {
     return m.hist_switched_template({
       name: templateName(getTemplate(next.template)),
@@ -73,4 +65,12 @@ function labelForPath(prev: Doc, next: Doc, path: string): string {
     return m.hist_edited_name({ name });
   }
   return m.hist_edited_cv();
-}
+};
+
+export const describeChange = (prev: Doc, next: Doc, paths: string[]) => {
+  if (paths.length === 0) {
+    return m.hist_no_change();
+  }
+  const labels = new Set(paths.map((p) => labelForPath(prev, next, p)));
+  return labels.size === 1 ? [...labels][0] : m.hist_edited_cv();
+};

@@ -1,8 +1,24 @@
-import { createFileRoute, notFound, Outlet } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  notFound,
+  Outlet,
+  getRouteApi,
+} from "@tanstack/react-router";
 
 import { AdminShell } from "#/components/admin/ui";
 import { getAdminAccess } from "#/lib/admin/functions";
 import { m } from "#/paraglide/messages.js";
+
+const routeApi = getRouteApi("/admin");
+
+const AdminLayout = () => {
+  const { admin } = routeApi.useRouteContext();
+  return (
+    <AdminShell email={admin.email}>
+      <Outlet />
+    </AdminShell>
+  );
+};
 
 /** /admin: only for ADMIN_EMAILS; everyone else gets a plain 404. */
 export const Route = createFileRoute("/admin")({
@@ -24,12 +40,3 @@ export const Route = createFileRoute("/admin")({
   }),
   component: AdminLayout,
 });
-
-function AdminLayout() {
-  const { admin } = Route.useRouteContext();
-  return (
-    <AdminShell email={admin.email}>
-      <Outlet />
-    </AdminShell>
-  );
-}

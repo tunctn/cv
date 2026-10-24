@@ -1,6 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { createFileRoute } from "@tanstack/react-router";
 import { generateText } from "ai";
+
 import { CONTACT_EMAIL, faqItems } from "#/components/marketing/faq-copy";
 import { HUMAN_WRITING } from "#/lib/ai/humanizer";
 import { TEMPLATES } from "#/lib/cv/templates";
@@ -12,7 +13,8 @@ import {
   usageNumbers,
 } from "#/lib/server/ai-usage";
 import { m } from "#/paraglide/messages.js";
-import { getLocale, isLocale, type Locale } from "#/paraglide/runtime.js";
+import { getLocale, isLocale } from "#/paraglide/runtime.js";
+import type { Locale } from "#/paraglide/runtime.js";
 
 const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -21,8 +23,7 @@ const LIMIT = 10;
 const WINDOW_MS = 60_000;
 const hits = new Map<string, number[]>();
 
-/** Light in-memory rate limit: LIMIT questions per IP per minute. */
-function allowed(ip: string) {
+const allowed = (ip: string) => {
   const now = Date.now();
   const recent = (hits.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
   if (recent.length >= LIMIT) {
@@ -39,15 +40,12 @@ function allowed(ip: string) {
     }
   }
   return true;
-}
+};
 
-function clientIp(request: Request) {
-  return (
-    request.headers.get("cf-connecting-ip") ??
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    "unknown"
-  );
-}
+const clientIp = (request: Request) =>
+  request.headers.get("cf-connecting-ip") ??
+  request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+  "unknown";
 
 const instructions = `You answer questions about SmileCV (smilecv.com), a CV builder, on its FAQ page.
 
@@ -75,12 +73,7 @@ Rules:
 
 ${HUMAN_WRITING}`;
 
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
-}
+const json = (body: unknown, status = 200) => Response.json(body, { status });
 
 export const Route = createFileRoute("/api/faq")({
   server: {

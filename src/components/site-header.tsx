@@ -6,6 +6,7 @@ import {
 } from "@hugeicons-pro/core-stroke-rounded";
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useCallback } from "react";
+
 import { GitHubButton } from "#/components/github-button";
 import { Icon } from "#/components/icon";
 import { Logo } from "#/components/primitives";
@@ -30,42 +31,7 @@ export type Viewer = {
   isAdmin?: boolean;
 } | null;
 
-export function SiteHeader({
-  viewer,
-  children,
-}: {
-  viewer: Viewer;
-  children?: React.ReactNode;
-}) {
-  return (
-    <header className="sticky top-0 z-30 border-transparent border-b bg-background/90 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-[1280px] items-center gap-4 px-4 sm:px-6">
-        <Link className="flex shrink-0 items-center" to="/">
-          <Logo />
-        </Link>
-        {viewer ? (
-          <nav className="ms-4 hidden items-center gap-1 text-sm sm:flex">
-            <Link
-              className="rounded-full px-3 py-1.5 text-muted-foreground transition-colors hover:text-foreground data-[status=active]:text-foreground"
-              to="/cvs"
-            >
-              {m.common_my_cvs()}
-            </Link>
-          </nav>
-        ) : null}
-        <div className="ms-auto flex items-center gap-2">
-          {children}
-          <div className="hidden sm:block">
-            <GitHubButton />
-          </div>
-          <AccountArea viewer={viewer} />
-        </div>
-      </div>
-    </header>
-  );
-}
-
-export function AccountArea({ viewer }: { viewer: Viewer }) {
+export const AccountArea = ({ viewer }: { viewer: Viewer }) => {
   const router = useRouter();
   const navigate = useNavigate();
   const openCvs = useCallback(() => navigate({ to: "/cvs" }), [navigate]);
@@ -114,7 +80,7 @@ export function AccountArea({ viewer }: { viewer: Viewer }) {
           >
             <Avatar className="size-8">
               {viewer.image ? <AvatarImage alt="" src={viewer.image} /> : null}
-              <AvatarFallback className="bg-surface font-medium text-xs">
+              <AvatarFallback className="bg-surface text-xs font-medium">
                 {initials}
               </AvatarFallback>
             </Avatar>
@@ -124,15 +90,15 @@ export function AccountArea({ viewer }: { viewer: Viewer }) {
       <DropdownMenuContent align="end" className="w-60">
         <div className="px-2 py-1.5">
           {showName ? (
-            <p className="truncate font-medium text-foreground text-sm">
+            <p className="text-foreground truncate text-sm font-medium">
               {viewer.name}
             </p>
           ) : null}
           <p
             className={
               showName
-                ? "truncate text-muted-foreground text-xs"
-                : "truncate font-medium text-foreground text-sm"
+                ? "text-muted-foreground truncate text-xs"
+                : "text-foreground truncate text-sm font-medium"
             }
           >
             {viewer.email}
@@ -156,4 +122,37 @@ export function AccountArea({ viewer }: { viewer: Viewer }) {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+};
+
+export const SiteHeader = ({
+  viewer,
+  children,
+}: {
+  viewer: Viewer;
+  children?: React.ReactNode;
+}) => (
+  <header className="bg-background/90 sticky top-0 z-30 border-b border-transparent backdrop-blur">
+    <div className="mx-auto flex h-16 max-w-[1280px] items-center gap-4 px-4 sm:px-6">
+      <Link className="flex shrink-0 items-center" to="/">
+        <Logo />
+      </Link>
+      {viewer ? (
+        <nav className="ms-4 hidden items-center gap-1 text-sm sm:flex">
+          <Link
+            className="text-muted-foreground hover:text-foreground data-[status=active]:text-foreground rounded-full px-3 py-1.5 transition-colors"
+            to="/cvs"
+          >
+            {m.common_my_cvs()}
+          </Link>
+        </nav>
+      ) : null}
+      <div className="ms-auto flex items-center gap-2">
+        {children}
+        <div className="hidden sm:block">
+          <GitHubButton />
+        </div>
+        <AccountArea viewer={viewer} />
+      </div>
+    </div>
+  </header>
+);

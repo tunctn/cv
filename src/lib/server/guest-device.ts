@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+
 import { and, eq, lt, sql } from "drizzle-orm";
 
 import { db } from "#/db";
@@ -6,33 +7,31 @@ import { guestDevice } from "#/db/schema";
 import { readConsent } from "#/lib/consent";
 import { DEVICE_COOKIE } from "#/lib/guest";
 
-const VISITOR_ID = /^[a-f0-9]{16,64}$/i;
+const VISITOR_ID = /^[a-f0-9]{16,64}$/iu;
 
-/** Salted hash of the browser's visitor id; null without a usable cookie. */
-export function deviceHash(cookieHeader: string | null | undefined) {
+export const deviceHash = (cookieHeader: string | null | undefined) => {
   if (!readConsent(cookieHeader).functional) {
     return null;
   }
   const match = (cookieHeader ?? "").match(
-    new RegExp(`(?:^|; )${DEVICE_COOKIE}=([^;]*)`)
+    new RegExp(`(?:^|; )${DEVICE_COOKIE}=(?<value>[^;]*)`, "u")
   );
-  const id = match ? decodeURIComponent(match[1]) : "";
+  const id = match ? decodeURIComponent(match.groups?.value ?? "") : "";
   if (!VISITOR_ID.test(id)) {
     return null;
   }
   return createHash("sha256")
     .update(`${process.env.BETTER_AUTH_SECRET ?? ""}:${id}`)
     .digest("hex");
-}
+};
 
 type Counter = "cvs" | "aiMessages";
 
-/** Use one of the device's free `field` units; false if none are left. */
-export async function spendDevice(
+export const spendDevice = async (
   hash: string | null,
   field: Counter,
   limit: number
-) {
+) => {
   if (!hash) {
     return true;
   }
@@ -44,10 +43,9 @@ export async function spendDevice(
     .where(and(eq(guestDevice.hash, hash), lt(column, limit)))
     .returning({ hash: guestDevice.hash });
   return Boolean(row);
-}
+};
 
-/** How many of the device's free `field` units are used. */
-export async function deviceUsed(hash: string | null, field: Counter) {
+export const deviceUsed = async (hash: string | null, field: Counter) => {
   if (!hash) {
     return 0;
   }
@@ -56,4 +54,4 @@ export async function deviceUsed(hash: string | null, field: Counter) {
     .from(guestDevice)
     .where(eq(guestDevice.hash, hash));
   return row?.n ?? 0;
-}
+};

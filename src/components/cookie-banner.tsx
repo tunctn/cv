@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 
 import { Button } from "#/components/ui/button";
 import {
@@ -11,30 +11,67 @@ import {
   DialogTitle,
 } from "#/components/ui/dialog";
 import { Switch } from "#/components/ui/switch";
-import { OPEN_COOKIE_SETTINGS, readConsent, saveConsent } from "#/lib/consent";
+import {
+  analyticsAllowed,
+  functionalAllowed,
+  OPEN_COOKIE_SETTINGS,
+  readConsent,
+  saveConsent,
+  subscribeConsent,
+} from "#/lib/consent";
 import { m } from "#/paraglide/messages.js";
 
-/** Opens the cookie settings dialog (e.g. from the footer). */
-export function openCookieSettings() {
+export const openCookieSettings = () => {
   window.dispatchEvent(new Event(OPEN_COOKIE_SETTINGS));
-}
+};
 
-/**
- * A small card in the bottom corner until the visitor chooses; never blocks
- * the page. The settings dialog can be reopened from the footer.
- */
-export function CookieBanner() {
+const Category = ({
+  title,
+  description,
+  checked,
+  disabled,
+  onChange,
+}: {
+  title: string;
+  description: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange?: (v: boolean) => void;
+}) => (
+  <div className="flex items-start justify-between gap-4 p-4">
+    <span className="min-w-0">
+      <span className="block text-[14px] font-medium">{title}</span>
+      <span className="text-muted-foreground mt-0.5 block text-[13px] leading-relaxed">
+        {description}
+      </span>
+    </span>
+    <Switch
+      aria-label={title}
+      checked={checked}
+      className="mt-0.5 shrink-0"
+      disabled={disabled}
+      onCheckedChange={onChange}
+    />
+  </div>
+);
+
+export const CookieBanner = () => {
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const [show, setShow] = useState(false);
+  // null on the server and while hydrating: the banner stays hidden until the
+  // consent cookie can be read.
+  const cookies = useSyncExternalStore(
+    subscribeConsent,
+    () => document.cookie,
+    () => null
+  );
+  const [dismissed, setDismissed] = useState(false);
+  const show = cookies !== null && !dismissed && !readConsent(cookies).chosen;
   const [settings, setSettings] = useState(false);
-  const [functional, setFunctional] = useState(false);
-  const [analytics, setAnalytics] = useState(false);
+  // Only shown inside the settings dialog, which never renders on the server.
+  const [functional, setFunctional] = useState(functionalAllowed);
+  const [analytics, setAnalytics] = useState(analyticsAllowed);
 
   useEffect(() => {
-    const c = readConsent(document.cookie);
-    setShow(!c.chosen);
-    setFunctional(c.functional);
-    setAnalytics(c.analytics);
     const open = () => {
       const now = readConsent(document.cookie);
       setFunctional(now.functional);
@@ -49,7 +86,7 @@ export function CookieBanner() {
     saveConsent(allow, allowAnalytics);
     setFunctional(allow);
     setAnalytics(allowAnalytics);
-    setShow(false);
+    setDismissed(true);
     setSettings(false);
   }, []);
   const acceptAll = useCallback(() => choose(true), [choose]);
@@ -70,10 +107,10 @@ export function CookieBanner() {
       {show && !settings ? (
         <section
           aria-label={m.cookies_title()}
-          className="fade-in-0 slide-in-from-bottom-2 fixed right-4 bottom-4 left-4 z-40 animate-in rounded-[20px] border bg-popover p-4 text-popover-foreground shadow-[0_8px_30px_rgba(0,0,0,0.12)] duration-300 motion-reduce:animate-none sm:right-auto sm:left-5 sm:w-[380px]"
+          className="fade-in-0 slide-in-from-bottom-2 animate-in bg-popover text-popover-foreground fixed right-4 bottom-4 left-4 z-40 rounded-[20px] border p-4 shadow-[0_8px_30px_rgba(0,0,0,0.12)] duration-300 motion-reduce:animate-none sm:right-auto sm:left-5 sm:w-[380px]"
         >
-          <p className="font-semibold text-[14px]">{m.cookies_title()}</p>
-          <p className="mt-1 text-[13px] text-muted-foreground leading-relaxed">
+          <p className="text-[14px] font-semibold">{m.cookies_title()}</p>
+          <p className="text-muted-foreground mt-1 text-[13px] leading-relaxed">
             {m.cookies_body()}{" "}
             <Link className="underline underline-offset-2" to="/privacy">
               {m.cookies_learn_more()}
@@ -133,36 +170,4 @@ export function CookieBanner() {
       </Dialog>
     </>
   );
-}
-
-function Category({
-  title,
-  description,
-  checked,
-  disabled,
-  onChange,
-}: {
-  title: string;
-  description: string;
-  checked: boolean;
-  disabled?: boolean;
-  onChange?: (v: boolean) => void;
-}) {
-  return (
-    <div className="flex items-start justify-between gap-4 p-4">
-      <span className="min-w-0">
-        <span className="block font-medium text-[14px]">{title}</span>
-        <span className="mt-0.5 block text-[13px] text-muted-foreground leading-relaxed">
-          {description}
-        </span>
-      </span>
-      <Switch
-        aria-label={title}
-        checked={checked}
-        className="mt-0.5 shrink-0"
-        disabled={disabled}
-        onCheckedChange={onChange}
-      />
-    </div>
-  );
-}
+};

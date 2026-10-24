@@ -10,9 +10,11 @@ import {
   redirect,
   useNavigate,
   useRouter,
+  getRouteApi,
 } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+
 import { EmptyState } from "#/components/dashboard/empty-state";
 import { GuestBanner } from "#/components/dashboard/guest-banner";
 import {
@@ -50,19 +52,9 @@ import { startCv } from "#/lib/start-cv";
 import { m } from "#/paraglide/messages.js";
 import { getLocale } from "#/paraglide/runtime.js";
 
-export const Route = createFileRoute("/cvs")({
-  loader: async () => {
-    const viewer = await getViewer();
-    if (!viewer) {
-      throw redirect({ to: "/" });
-    }
-    return { viewer, cvs: await listCvs() };
-  },
-  head: () => ({ meta: [{ title: m.meta_title_cvs() }] }),
-  component: Dashboard,
-});
+const routeApi = getRouteApi("/cvs");
 
-function timeAgo(iso: string) {
+const timeAgo = (iso: string) => {
   const s = (Date.now() - new Date(iso).getTime()) / 1000;
   if (s < 60) {
     return m.time_just_now();
@@ -78,7 +70,7 @@ function timeAgo(iso: string) {
     month: "short",
     year: "numeric",
   });
-}
+};
 
 interface CvRef {
   id: string;
@@ -87,22 +79,93 @@ interface CvRef {
 
 type CvSummary = Awaited<ReturnType<typeof listCvs>>[number];
 
-function Dashboard() {
-  const { viewer, cvs } = Route.useLoaderData();
+const CvCard = ({
+  cv: c,
+  onDelete,
+}: {
+  cv: CvSummary;
+  onDelete: (cv: CvRef) => void;
+}) => {
+  const router = useRouter();
+  const duplicate = useCallback(async () => {
+    try {
+      await duplicateCv({ data: { id: c.id } });
+      router.invalidate();
+    } catch (error) {
+      const limit = limitOf(error);
+      if (limit) {
+        openSignupGate("cv", limit);
+      } else {
+        toast.error((error as Error).message);
+      }
+    }
+  }, [c.id, router]);
+  const askDelete = useCallback(() => onDelete(c), [c, onDelete]);
+  return (
+    <div className="group relative">
+      <Link
+        className="focus-visible:ring-ring/50 block rounded-[24px] outline-none focus-visible:ring-3"
+        params={{ id: c.id }}
+        to="/cv/$id"
+      >
+        {/* Templates are laid out left to right in every UI language. */}
+        <div
+          className="bg-surface group-hover:bg-surface-2 overflow-hidden rounded-[24px] border border-transparent px-5 pt-5 transition-colors sm:px-7 sm:pt-7"
+          dir="ltr"
+        >
+          <CvThumb
+            className="rounded-t-md shadow-[0_1px_3px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.06)] transition-shadow duration-300 group-hover:shadow-[0_2px_6px_rgba(0,0,0,0.08),0_16px_40px_rgba(0,0,0,0.10)]"
+            cv={c.data}
+            template={c.template}
+          />
+        </div>
+      </Link>
+      <div className="mt-3 flex items-start gap-2 px-1">
+        <Link className="min-w-0 flex-1" params={{ id: c.id }} to="/cv/$id">
+          <p className="truncate text-[15px] font-medium">{c.title}</p>
+          <p className="text-muted-foreground text-[13px]">
+            {getTemplate(c.template).name} · {timeAgo(c.updatedAt)}
+          </p>
+        </Link>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button aria-label={m.cvs_more()} size="icon-sm" variant="ghost">
+                <Icon icon={MoreHorizontalIcon} />
+              </Button>
+            }
+          />
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={duplicate}>
+              <Icon icon={Copy01Icon} /> {m.cvs_duplicate()}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={askDelete} variant="destructive">
+              <Icon icon={Delete02Icon} /> {m.common_delete()}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  );
+};
+
+const Dashboard = () => {
+  const { viewer, cvs } = routeApi.useLoaderData();
   const router = useRouter();
   const navigate = useNavigate();
   const [creating, setCreating] = useState(false);
   const [toDelete, setToDelete] = useState<CvRef | null>(null);
   const importer = useCvImport();
+  const handleImport = importer.run;
 
   const create = useCallback(async () => {
     setCreating(true);
     try {
       const { id } = await startCv();
       navigate({ to: "/cv/$id", params: { id } });
-    } catch (e) {
-      if (!isGuestLimit(e)) {
-        toast.error((e as Error).message);
+    } catch (error) {
+      if (!isGuestLimit(error)) {
+        toast.error((error as Error).message);
       }
       setCreating(false);
     }
@@ -134,11 +197,11 @@ function Dashboard() {
         ) : null}
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="font-semibold text-[28px] tracking-[-0.03em] sm:text-[32px]">
+            <h1 className="text-[28px] font-semibold tracking-[-0.03em] sm:text-[32px]">
               {m.common_my_cvs()}
             </h1>
             {cvs.length > 0 ? (
-              <p className="mt-1 text-[14px] text-muted-foreground">
+              <p className="text-muted-foreground mt-1 text-[14px]">
                 {m.cvs_last_edited({
                   count:
                     cvs.length === 1
@@ -154,7 +217,7 @@ function Dashboard() {
               busy={importer.busy}
               className="max-sm:px-2.5"
               disabled={creating}
-              onFile={importer.run}
+              onFile={handleImport}
             />
             <Button disabled={creating || importer.busy} onClick={create}>
               <Icon data-icon="inline-start" icon={Add01Icon} />
@@ -169,7 +232,7 @@ function Dashboard() {
               creating={creating}
               importing={importer.busy}
               onCreate={create}
-              onImport={importer.run}
+              onImport={handleImport}
             />
           </div>
         ) : (
@@ -182,7 +245,7 @@ function Dashboard() {
         )}
       </main>
       <SiteFooter />
-      <FileDropOverlay disabled={importer.busy} onFile={importer.run} />
+      <FileDropOverlay disabled={importer.busy} onFile={handleImport} />
 
       <AlertDialog onOpenChange={closeDialog} open={!!toDelete}>
         <AlertDialogContent>
@@ -204,74 +267,16 @@ function Dashboard() {
       </AlertDialog>
     </div>
   );
-}
+};
 
-function CvCard({
-  cv: c,
-  onDelete,
-}: {
-  cv: CvSummary;
-  onDelete: (cv: CvRef) => void;
-}) {
-  const router = useRouter();
-  const duplicate = useCallback(async () => {
-    try {
-      await duplicateCv({ data: { id: c.id } });
-      router.invalidate();
-    } catch (e) {
-      const limit = limitOf(e);
-      if (limit) {
-        openSignupGate("cv", limit);
-      } else {
-        toast.error((e as Error).message);
-      }
+export const Route = createFileRoute("/cvs")({
+  loader: async () => {
+    const viewer = await getViewer();
+    if (!viewer) {
+      throw redirect({ to: "/" });
     }
-  }, [c.id, router]);
-  const askDelete = useCallback(() => onDelete(c), [c, onDelete]);
-  return (
-    <div className="group relative">
-      <Link
-        className="block rounded-[24px] outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-        params={{ id: c.id }}
-        to="/cv/$id"
-      >
-        {/* Templates are laid out left to right in every UI language. */}
-        <div
-          className="overflow-hidden rounded-[24px] border border-transparent bg-surface px-5 pt-5 transition-colors group-hover:bg-surface-2 sm:px-7 sm:pt-7"
-          dir="ltr"
-        >
-          <CvThumb
-            className="rounded-t-md shadow-[0_1px_3px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.06)] transition-shadow duration-300 group-hover:shadow-[0_2px_6px_rgba(0,0,0,0.08),0_16px_40px_rgba(0,0,0,0.10)]"
-            cv={c.data}
-            template={c.template}
-          />
-        </div>
-      </Link>
-      <div className="mt-3 flex items-start gap-2 px-1">
-        <Link className="min-w-0 flex-1" params={{ id: c.id }} to="/cv/$id">
-          <p className="truncate font-medium text-[15px]">{c.title}</p>
-          <p className="text-[13px] text-muted-foreground">
-            {getTemplate(c.template).name} · {timeAgo(c.updatedAt)}
-          </p>
-        </Link>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button aria-label={m.cvs_more()} size="icon-sm" variant="ghost">
-                <Icon icon={MoreHorizontalIcon} />
-              </Button>
-            }
-          />
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={duplicate}>
-              <Icon icon={Copy01Icon} /> {m.cvs_duplicate()}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={askDelete} variant="destructive">
-              <Icon icon={Delete02Icon} /> {m.common_delete()}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </div>
-  );
-}
+    return { viewer, cvs: await listCvs() };
+  },
+  head: () => ({ meta: [{ title: m.meta_title_cvs() }] }),
+  component: Dashboard,
+});

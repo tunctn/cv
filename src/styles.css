@@ -139,7 +139,7 @@
     cursor: pointer;
   }
   body {
-    @apply bg-background font-sans text-foreground;
+    @apply bg-background text-foreground font-sans;
   }
 }
 

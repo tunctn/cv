@@ -11,9 +11,11 @@ import {
   UndoIcon,
   UserIcon,
 } from "@hugeicons-pro/core-stroke-rounded";
-import { type ReactNode, useCallback } from "react";
-import { Icon, type IconSvgElement } from "#/components/icon";
+import { useCallback } from "react";
+import type { ReactNode } from "react";
 
+import { Icon } from "#/components/icon";
+import type { IconSvgElement } from "#/components/icon";
 import { Button } from "#/components/ui/button";
 import {
   DropdownMenu,
@@ -28,19 +30,17 @@ import {
   PopoverTrigger,
 } from "#/components/ui/popover";
 import { Slider } from "#/components/ui/slider";
-import { resolveStyle, type TemplateDef } from "#/lib/cv/engine";
+import { resolveStyle } from "#/lib/cv/engine";
+import type { TemplateDef } from "#/lib/cv/engine";
 import { sectionLabel, withLocalLabel } from "#/lib/cv/i18n-labels";
 import { addCustomSection, blankFor } from "#/lib/cv/paths";
 import {
-  type CV,
-  type CvStyle,
   customKey,
   emptyCustomSection,
   PAPERS,
-  type Paper,
   SECTION_KEYS,
-  type SectionKey,
 } from "#/lib/cv/schema";
+import type { CV, CvStyle, Paper, SectionKey } from "#/lib/cv/schema";
 import { track } from "#/lib/track";
 import { cn } from "#/lib/utils";
 import { m } from "#/paraglide/messages.js";
@@ -67,8 +67,285 @@ interface Props {
   template: string;
 }
 
-/** Template, type, colour and page settings above the canvas. */
-export function StyleBar({
+/** Icons for the built-in sections in the "+ Section" menu. */
+const SECTION_ICONS: Record<SectionKey | "profile", IconSvgElement> = {
+  profile: UserIcon,
+  experience: Briefcase01Icon,
+  education: Mortarboard02Icon,
+  skills: StarIcon,
+  projects: Folder01Icon,
+  languages: LanguageCircleIcon,
+};
+
+const AddProfileItem = ({
+  onChange,
+  onSelect,
+}: {
+  onChange: Props["onChange"];
+  onSelect: Props["onSelect"];
+}) => {
+  const add = useCallback(() => {
+    onChange((c) =>
+      withLocalLabel(
+        { ...c, basics: { ...c.basics, summary: m.ed_profile_starter() } },
+        "profile"
+      )
+    );
+    track("section_added", { section: "profile" });
+    onSelect("basics.summary");
+  }, [onChange, onSelect]);
+  return (
+    <DropdownMenuItem onClick={add}>
+      <Icon icon={SECTION_ICONS.profile} /> {sectionLabel("profile")}
+    </DropdownMenuItem>
+  );
+};
+
+const AddSectionItem = ({
+  k,
+  onChange,
+  onSelect,
+}: {
+  k: SectionKey;
+  onChange: Props["onChange"];
+  onSelect: Props["onSelect"];
+}) => {
+  const add = useCallback(() => {
+    onChange((c) => withLocalLabel({ ...c, [k]: [blankFor(k)] }, k));
+    track("section_added", { section: k });
+    onSelect(`${k}.0`);
+  }, [k, onChange, onSelect]);
+  return (
+    <DropdownMenuItem onClick={add}>
+      <Icon icon={SECTION_ICONS[k]} /> {sectionLabel(k)}
+    </DropdownMenuItem>
+  );
+};
+
+const focusField = (path: string, tries = 30) => {
+  const el = document.querySelector<HTMLElement>(
+    `[data-edit-path="${path}"][contenteditable]`
+  );
+  if (!el) {
+    if (tries > 0) {
+      requestAnimationFrame(() => focusField(path, tries - 1));
+    }
+    return;
+  }
+  el.focus({ preventScroll: true });
+  el.scrollIntoView({ block: "nearest", inline: "nearest" });
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const sel = window.getSelection();
+  sel?.removeAllRanges();
+  sel?.addRange(range);
+};
+
+const AddCustomSectionItem = ({
+  cv,
+  onChange,
+  onSelect,
+}: {
+  cv: CV;
+  onChange: Props["onChange"];
+  onSelect: Props["onSelect"];
+}) => {
+  const add = useCallback(() => {
+    const section = emptyCustomSection();
+    onChange((c) => addCustomSection(c, section));
+    track("section_added", { section: "custom" });
+    onSelect(`sections.${customKey(section.id)}`);
+    focusField(`custom.${cv.custom.length}.title`);
+  }, [cv.custom.length, onChange, onSelect]);
+  return (
+    <DropdownMenuItem onClick={add}>
+      <Icon icon={DashboardSquareAddIcon} /> {m.editor_custom_section()}
+    </DropdownMenuItem>
+  );
+};
+
+/** Message functions, called at render so each request gets its locale. */
+const PAPER_LABELS: Record<Paper, () => string> = {
+  a4: m.ed_paper_a4,
+  letter: m.ed_paper_letter,
+};
+
+const PaperButton = ({
+  paper,
+  active,
+  onStyle,
+}: {
+  paper: Paper;
+  active: boolean;
+  onStyle: (patch: Partial<CvStyle>) => void;
+}) => {
+  const pick = useCallback(() => onStyle({ paper }), [paper, onStyle]);
+  return (
+    <button
+      aria-checked={active}
+      className={cn(
+        "focus-visible:ring-foreground/20 h-7 cursor-pointer rounded-[8px] text-[13px] transition-colors outline-none focus-visible:ring-2",
+        active
+          ? "bg-background text-foreground ring-foreground/[0.06] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1"
+          : "text-muted-foreground hover:text-foreground"
+      )}
+      onClick={pick}
+      // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- segmented control with radio semantics
+      role="radio"
+      type="button"
+    >
+      {PAPER_LABELS[paper]()}
+    </button>
+  );
+};
+
+const MarginSlider = ({
+  base,
+  label,
+  resetLabel,
+  prop,
+  value,
+  onStyle,
+}: {
+  base: number;
+  label: string;
+  /** In-sentence name for the reset button, e.g. "top margin". */
+  resetLabel: string;
+  prop: "padX" | "padTop" | "padBottom";
+  value: number;
+  onStyle: (patch: Partial<CvStyle>) => void;
+}) => {
+  const onValue = useCallback(
+    (v: number | readonly number[]) =>
+      onStyle({ [prop]: Array.isArray(v) ? v[0] : v }),
+    [prop, onStyle]
+  );
+  const onInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const n = Number(e.target.value);
+      if (Number.isFinite(n)) {
+        onStyle({ [prop]: Math.min(96, Math.max(0, Math.round(n))) });
+      }
+    },
+    [prop, onStyle]
+  );
+  const reset = useCallback(
+    () => onStyle({ [prop]: undefined }),
+    [prop, onStyle]
+  );
+  return (
+    <div className="grid grid-cols-[76px_1fr_60px] items-center gap-2.5 text-[13px]">
+      <span className="text-muted-foreground flex items-center gap-1 whitespace-nowrap">
+        {label}
+        <ResetField label={resetLabel} onReset={reset} show={value !== base} />
+      </span>
+      <Slider
+        aria-label={m.ed_margin_aria({ side: label })}
+        max={96}
+        min={0}
+        onValueChange={onValue}
+        step={1}
+        value={[value]}
+      />
+      <label className="bg-surface text-muted-foreground focus-within:ring-foreground/15 flex h-7 items-center justify-end gap-0.5 rounded-[8px] pr-2 focus-within:ring-2">
+        <input
+          aria-label={m.ed_margin_px_aria({ side: label })}
+          className="text-foreground w-8 [appearance:textfield] bg-transparent text-right tabular-nums outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          inputMode="numeric"
+          max={96}
+          min={0}
+          onChange={onInput}
+          type="number"
+          value={value}
+        />
+        {/* oxlint-disable-next-line i18n/jsx-text -- CSS unit, same in every language */}
+        px
+      </label>
+    </div>
+  );
+};
+
+const PagePopover = ({
+  base,
+  style,
+  onStyle,
+}: {
+  base: ReturnType<typeof resolveStyle>;
+  style: ReturnType<typeof resolveStyle>;
+  onStyle: (patch: Partial<CvStyle>) => void;
+}) => {
+  const reset = useCallback(
+    () => onStyle({ padX: undefined, padTop: undefined, padBottom: undefined }),
+    [onStyle]
+  );
+  return (
+    <Popover>
+      <PopoverTrigger
+        render={
+          <Button variant="ghost">
+            <Icon data-icon="inline-start" icon={LayoutTemplateIcon} />{" "}
+            {m.ed_page()}
+          </Button>
+        }
+      />
+      <PopoverContent align="start" className="w-[316px] gap-0">
+        <p className="text-[13px] font-medium">{m.ed_paper()}</p>
+        <div
+          aria-label={m.ed_paper_size()}
+          className="bg-surface mt-2 grid grid-cols-2 gap-0.5 rounded-[10px] p-0.5"
+          role="radiogroup"
+        >
+          {PAPERS.map((p) => (
+            <PaperButton
+              active={style.paper === p}
+              key={p}
+              onStyle={onStyle}
+              paper={p}
+            />
+          ))}
+        </div>
+        <div className="mt-5 flex items-center justify-between">
+          <p className="text-[13px] font-medium">{m.ed_margins()}</p>
+          <button
+            className="text-muted-foreground hover:bg-surface hover:text-foreground -mr-1.5 inline-flex h-6 cursor-pointer items-center gap-1 rounded-md px-1.5 text-[12px] transition-colors"
+            onClick={reset}
+            type="button"
+          >
+            <Icon className="size-3.5" icon={UndoIcon} /> {m.ed_reset()}
+          </button>
+        </div>
+        <div className="mt-3 grid gap-3.5">
+          <MarginSlider
+            base={base.padX}
+            label={m.ed_margin_sides()}
+            onStyle={onStyle}
+            prop="padX"
+            resetLabel={m.ed_margin_sides_name()}
+            value={style.padX}
+          />
+          <MarginSlider
+            base={base.padTop}
+            label={m.ed_margin_top()}
+            onStyle={onStyle}
+            prop="padTop"
+            resetLabel={m.ed_margin_top_name()}
+            value={style.padTop}
+          />
+          <MarginSlider
+            base={base.padBottom}
+            label={m.ed_margin_bottom()}
+            onStyle={onStyle}
+            prop="padBottom"
+            resetLabel={m.ed_margin_bottom_name()}
+            value={style.padBottom}
+          />
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+export const StyleBar = ({
   cv,
   def,
   template,
@@ -79,7 +356,7 @@ export function StyleBar({
   onToggleClip,
   onTranslate,
   start,
-}: Props) {
+}: Props) => {
   const style = resolveStyle(def, cv);
   // The template's own values, so changed rows can offer a reset.
   const base = resolveStyle(def, { ...cv, style: {} });
@@ -95,7 +372,7 @@ export function StyleBar({
   const empty = SECTION_KEYS.filter((k) => cv[k].length === 0);
 
   return (
-    <div className="no-scrollbar scroll-fade-x flex shrink-0 items-center gap-2 overflow-x-auto border-b bg-background px-3 py-2 *:shrink-0">
+    <div className="no-scrollbar scroll-fade-x bg-background flex shrink-0 items-center gap-2 overflow-x-auto border-b px-3 py-2 *:shrink-0">
       {start}
       <TemplatePicker cv={cv} onTemplate={onTemplate} template={template} />
       <CvLanguage cv={cv} onChange={onChange} onTranslate={onTranslate} />
@@ -147,284 +424,4 @@ export function StyleBar({
       </Button>
     </div>
   );
-}
-
-/** Icons for the built-in sections in the "+ Section" menu. */
-const SECTION_ICONS: Record<SectionKey | "profile", IconSvgElement> = {
-  profile: UserIcon,
-  experience: Briefcase01Icon,
-  education: Mortarboard02Icon,
-  skills: StarIcon,
-  projects: Folder01Icon,
-  languages: LanguageCircleIcon,
 };
-
-function AddProfileItem({
-  onChange,
-  onSelect,
-}: {
-  onChange: Props["onChange"];
-  onSelect: Props["onSelect"];
-}) {
-  const add = useCallback(() => {
-    onChange((c) =>
-      withLocalLabel(
-        { ...c, basics: { ...c.basics, summary: m.ed_profile_starter() } },
-        "profile"
-      )
-    );
-    track("section_added", { section: "profile" });
-    onSelect("basics.summary");
-  }, [onChange, onSelect]);
-  return (
-    <DropdownMenuItem onClick={add}>
-      <Icon icon={SECTION_ICONS.profile} /> {sectionLabel("profile")}
-    </DropdownMenuItem>
-  );
-}
-
-function AddSectionItem({
-  k,
-  onChange,
-  onSelect,
-}: {
-  k: SectionKey;
-  onChange: Props["onChange"];
-  onSelect: Props["onSelect"];
-}) {
-  const add = useCallback(() => {
-    onChange((c) => withLocalLabel({ ...c, [k]: [blankFor(k)] }, k));
-    track("section_added", { section: k });
-    onSelect(`${k}.0`);
-  }, [k, onChange, onSelect]);
-  return (
-    <DropdownMenuItem onClick={add}>
-      <Icon icon={SECTION_ICONS[k]} /> {sectionLabel(k)}
-    </DropdownMenuItem>
-  );
-}
-
-/** Focuses a field once the paginated pages have rendered it, text selected. */
-function focusField(path: string, tries = 30) {
-  const el = document.querySelector<HTMLElement>(
-    `[data-edit-path="${path}"][contenteditable]`
-  );
-  if (!el) {
-    if (tries > 0) {
-      requestAnimationFrame(() => focusField(path, tries - 1));
-    }
-    return;
-  }
-  el.focus({ preventScroll: true });
-  el.scrollIntoView({ block: "nearest", inline: "nearest" });
-  const range = document.createRange();
-  range.selectNodeContents(el);
-  const sel = window.getSelection();
-  sel?.removeAllRanges();
-  sel?.addRange(range);
-}
-
-/** Adds a section the user names themselves, with one blank entry. */
-function AddCustomSectionItem({
-  cv,
-  onChange,
-  onSelect,
-}: {
-  cv: CV;
-  onChange: Props["onChange"];
-  onSelect: Props["onSelect"];
-}) {
-  const add = useCallback(() => {
-    const section = emptyCustomSection();
-    onChange((c) => addCustomSection(c, section));
-    track("section_added", { section: "custom" });
-    onSelect(`sections.${customKey(section.id)}`);
-    focusField(`custom.${cv.custom.length}.title`);
-  }, [cv.custom.length, onChange, onSelect]);
-  return (
-    <DropdownMenuItem onClick={add}>
-      <Icon icon={DashboardSquareAddIcon} /> {m.editor_custom_section()}
-    </DropdownMenuItem>
-  );
-}
-
-function PagePopover({
-  base,
-  style,
-  onStyle,
-}: {
-  base: ReturnType<typeof resolveStyle>;
-  style: ReturnType<typeof resolveStyle>;
-  onStyle: (patch: Partial<CvStyle>) => void;
-}) {
-  const reset = useCallback(
-    () => onStyle({ padX: undefined, padTop: undefined, padBottom: undefined }),
-    [onStyle]
-  );
-  return (
-    <Popover>
-      <PopoverTrigger
-        render={
-          <Button variant="ghost">
-            <Icon data-icon="inline-start" icon={LayoutTemplateIcon} />{" "}
-            {m.ed_page()}
-          </Button>
-        }
-      />
-      <PopoverContent align="start" className="w-[316px] gap-0">
-        <p className="font-medium text-[13px]">{m.ed_paper()}</p>
-        <div
-          aria-label={m.ed_paper_size()}
-          className="mt-2 grid grid-cols-2 gap-0.5 rounded-[10px] bg-surface p-0.5"
-          role="radiogroup"
-        >
-          {PAPERS.map((p) => (
-            <PaperButton
-              active={style.paper === p}
-              key={p}
-              onStyle={onStyle}
-              paper={p}
-            />
-          ))}
-        </div>
-        <div className="mt-5 flex items-center justify-between">
-          <p className="font-medium text-[13px]">{m.ed_margins()}</p>
-          <button
-            className="-mr-1.5 inline-flex h-6 cursor-pointer items-center gap-1 rounded-md px-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
-            onClick={reset}
-            type="button"
-          >
-            <Icon className="size-3.5" icon={UndoIcon} /> {m.ed_reset()}
-          </button>
-        </div>
-        <div className="mt-3 grid gap-3.5">
-          <MarginSlider
-            base={base.padX}
-            label={m.ed_margin_sides()}
-            onStyle={onStyle}
-            prop="padX"
-            resetLabel={m.ed_margin_sides_name()}
-            value={style.padX}
-          />
-          <MarginSlider
-            base={base.padTop}
-            label={m.ed_margin_top()}
-            onStyle={onStyle}
-            prop="padTop"
-            resetLabel={m.ed_margin_top_name()}
-            value={style.padTop}
-          />
-          <MarginSlider
-            base={base.padBottom}
-            label={m.ed_margin_bottom()}
-            onStyle={onStyle}
-            prop="padBottom"
-            resetLabel={m.ed_margin_bottom_name()}
-            value={style.padBottom}
-          />
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-/** Message functions, called at render so each request gets its locale. */
-const PAPER_LABELS: Record<Paper, () => string> = {
-  a4: m.ed_paper_a4,
-  letter: m.ed_paper_letter,
-};
-
-function PaperButton({
-  paper,
-  active,
-  onStyle,
-}: {
-  paper: Paper;
-  active: boolean;
-  onStyle: (patch: Partial<CvStyle>) => void;
-}) {
-  const pick = useCallback(() => onStyle({ paper }), [paper, onStyle]);
-  return (
-    // biome-ignore lint/a11y/useSemanticElements: segmented control with radio semantics
-    <button
-      aria-checked={active}
-      className={cn(
-        "h-7 cursor-pointer rounded-[8px] text-[13px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-foreground/20",
-        active
-          ? "bg-background font-medium text-foreground shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1 ring-foreground/[0.06]"
-          : "text-muted-foreground hover:text-foreground"
-      )}
-      onClick={pick}
-      role="radio"
-      type="button"
-    >
-      {PAPER_LABELS[paper]()}
-    </button>
-  );
-}
-
-function MarginSlider({
-  base,
-  label,
-  resetLabel,
-  prop,
-  value,
-  onStyle,
-}: {
-  base: number;
-  label: string;
-  /** In-sentence name for the reset button, e.g. "top margin". */
-  resetLabel: string;
-  prop: "padX" | "padTop" | "padBottom";
-  value: number;
-  onStyle: (patch: Partial<CvStyle>) => void;
-}) {
-  const onValue = useCallback(
-    (v: number | readonly number[]) =>
-      onStyle({ [prop]: Array.isArray(v) ? v[0] : v }),
-    [prop, onStyle]
-  );
-  const onInput = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const n = Number(e.target.value);
-      if (Number.isFinite(n)) {
-        onStyle({ [prop]: Math.min(96, Math.max(0, Math.round(n))) });
-      }
-    },
-    [prop, onStyle]
-  );
-  const reset = useCallback(
-    () => onStyle({ [prop]: undefined }),
-    [prop, onStyle]
-  );
-  return (
-    <div className="grid grid-cols-[76px_1fr_60px] items-center gap-2.5 text-[13px]">
-      <span className="flex items-center gap-1 whitespace-nowrap text-muted-foreground">
-        {label}
-        <ResetField label={resetLabel} onReset={reset} show={value !== base} />
-      </span>
-      <Slider
-        aria-label={m.ed_margin_aria({ side: label })}
-        max={96}
-        min={0}
-        onValueChange={onValue}
-        step={1}
-        value={[value]}
-      />
-      <label className="flex h-7 items-center justify-end gap-0.5 rounded-[8px] bg-surface pr-2 text-muted-foreground focus-within:ring-2 focus-within:ring-foreground/15">
-        <input
-          aria-label={m.ed_margin_px_aria({ side: label })}
-          className="w-8 bg-transparent text-right text-foreground tabular-nums outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-          inputMode="numeric"
-          max={96}
-          min={0}
-          onChange={onInput}
-          type="number"
-          value={value}
-        />
-        {/* biome-ignore lint/plugin: CSS unit, same in every language */}
-        px
-      </label>
-    </div>
-  );
-}

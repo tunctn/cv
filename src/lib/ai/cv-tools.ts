@@ -1,9 +1,10 @@
-import { type LanguageModel, tool } from "ai";
+import { tool } from "ai";
+import type { LanguageModel } from "ai";
 import { z } from "zod";
+
 import { FONTS } from "#/lib/cv/fonts";
 import { addCustomSection, removeCustomSection } from "#/lib/cv/paths";
 import {
-  type CV,
   customItemSchema,
   customKey,
   EMPTY_ITEM,
@@ -13,18 +14,20 @@ import {
   experienceSchema,
   languageSchema,
   newId,
-  type OrderKey,
   PAPERS,
   projectSchema,
   SECTION_KEYS,
-  type SectionKey,
   skillSchema,
 } from "#/lib/cv/schema";
-import { TEMPLATE_IDS, type TemplateId } from "#/lib/cv/templates";
-import { readUrl } from "./read-url";
-import { type TranslateUsage, translateCv } from "./translate-cv";
+import type { CV, OrderKey, SectionKey } from "#/lib/cv/schema";
+import { TEMPLATE_IDS } from "#/lib/cv/templates";
+import type { TemplateId } from "#/lib/cv/templates";
 
-const HEX_COLOUR = /^#[0-9a-fA-F]{6}$/;
+import { readUrl } from "./read-url";
+import { translateCv } from "./translate-cv";
+import type { TranslateUsage } from "./translate-cv";
+
+const HEX_COLOUR = /^#[0-9a-fA-F]{6}$/u;
 
 export interface Account {
   email: string;
@@ -77,16 +80,13 @@ const UPSERT_INPUTS = {
   languages: languageSchema.omit({ id: true }).partial().extend(upsertExtra),
 } as const;
 
-/** Case- and space-insensitive comparison of item titles. */
-function norm(title: string) {
-  return title.trim().toLocaleLowerCase();
-}
+const norm = (title: string) => title.trim().toLocaleLowerCase();
 
-function upsert(
+const upsert = (
   state: State,
   section: SectionKey,
   input: Record<string, unknown>
-) {
+) => {
   const { id, position, ...fields } = input as {
     id?: string;
     position?: number;
@@ -136,7 +136,7 @@ function upsert(
   const item = { ...EMPTY_ITEM[section](), ...fields };
   list.splice(Math.max(0, Math.min(position ?? 0, list.length)), 0, item);
   return { ok: true, id: item.id };
-}
+};
 
 const customItemInput = customItemSchema
   .omit({ id: true })
@@ -146,14 +146,13 @@ const customItemInput = customItemSchema
     section_id: z.string().describe("Id of the custom section."),
   });
 
-function findCustom(state: State, id: string) {
-  return state.cv.custom.find((s) => s.id === id);
-}
+const findCustom = (state: State, id: string) =>
+  state.cv.custom.find((s) => s.id === id);
 
-function upsertCustomItem(
+const upsertCustomItem = (
   state: State,
   input: z.infer<typeof customItemInput>
-) {
+) => {
   const { section_id, id, position, ...fields } = input;
   const section = findCustom(state, section_id);
   if (!section) {
@@ -174,16 +173,14 @@ function upsertCustomItem(
   );
   section.items.splice(at, 0, item);
   return { ok: true, id: item.id };
-}
+};
 
-export function createCvTools(
+export const createCvTools = (
   state: State,
   onChange: () => void,
-  /** Model for tools that need their own generation (translation). */
   model?: LanguageModel,
-  /** Gets the tokens a translation used, for cost tracking. */
   onTranslateUsage?: (usage: TranslateUsage) => void
-) {
+) => {
   const changed = <T>(result: T) => {
     onChange();
     return result;
@@ -195,7 +192,7 @@ export function createCvTools(
       inputSchema: UPSERT_INPUTS[section] as unknown as z.ZodType<
         Record<string, unknown>
       >,
-      execute: async (input: Record<string, unknown>) =>
+      execute: (input: Record<string, unknown>) =>
         changed(upsert(state, section, input)),
     });
 
@@ -464,4 +461,4 @@ export function createCvTools(
       },
     }),
   };
-}
+};

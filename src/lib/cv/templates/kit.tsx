@@ -1,80 +1,64 @@
 import { ImageAdd01Icon } from "@hugeicons-pro/core-stroke-rounded";
-import { type ReactNode, useCallback, useRef } from "react";
+import { useCallback, useRef } from "react";
+import type { ReactNode } from "react";
 import { toast } from "sonner";
+
 import { E, Sel, useEditor } from "#/components/cv/editing";
 import { fileToPhoto } from "#/components/editor/photo";
 import { Icon } from "#/components/icon";
 import { m } from "#/paraglide/messages.js";
+
 import type { Block } from "../engine";
-import {
-  type CustomKey,
-  type CustomSection,
-  type CV,
-  customKey,
-  isCustomKey,
-  type OrderKey,
-  type SectionKey,
-  type SkillItem,
+import { customKey, isCustomKey } from "../schema";
+import type {
+  CustomKey,
+  CustomSection,
+  CV,
+  OrderKey,
+  SectionKey,
+  SkillItem,
 } from "../schema";
 
-/**
- * Sections in the user's chosen order, without the empty built-in ones.
- * Custom sections always show (the user added them on purpose), unless `only`
- * limits the result to some built-in sections.
- */
-export function orderedSections(cv: CV, only?: SectionKey[]): OrderKey[] {
-  return cv.sectionOrder.filter((k) =>
+export const customIndex = (cv: CV, key: CustomKey) =>
+  cv.custom.findIndex((s) => customKey(s.id) === key);
+
+export const orderedSections = (cv: CV, only?: SectionKey[]): OrderKey[] =>
+  cv.sectionOrder.filter((k) =>
     isCustomKey(k)
       ? !only && customIndex(cv, k) !== -1
       : cv[k].length > 0 && (!only || only.includes(k))
   );
-}
 
-/** Index of a custom section in `cv.custom`, or -1. */
-export function customIndex(cv: CV, key: CustomKey) {
-  return cv.custom.findIndex((s) => customKey(s.id) === key);
-}
-
-/** Where a section's heading lives: `labels.<key>` or `custom.<i>.title`. */
-export function sectionLabel(cv: CV, key: OrderKey) {
+export const sectionLabel = (cv: CV, key: OrderKey) => {
   if (isCustomKey(key)) {
     const i = customIndex(cv, key);
     return { path: `custom.${i}.title`, value: cv.custom[i]?.title ?? "" };
   }
   return { path: `labels.${key}`, value: cv.labels[key] };
-}
+};
 
-/**
- * The blocks of one section: built-in sections from the template's table,
- * custom sections through the template's own entry renderer.
- */
-export function sectionBlocks(
+export const sectionBlocks = (
   cv: CV,
   key: OrderKey,
   builtin: Partial<Record<SectionKey, (cv: CV) => Block[]>>,
   custom: (section: CustomSection, p: string) => Block[]
-): Block[] {
+): Block[] => {
   if (isCustomKey(key)) {
     const i = customIndex(cv, key);
     return i === -1 ? [] : custom(cv.custom[i], `custom.${i}`);
   }
   return builtin[key]?.(cv) ?? [];
-}
+};
 
-/** True while the item at `path` (or something inside it) is selected in the editor. */
-export function useExpanded(path: string) {
+export const useExpanded = (path: string) => {
   const ed = useEditor();
   const sel = ed?.selected;
   return Boolean(
     (sel && (sel === path || sel.startsWith(`${path}.`))) || ed?.isBlank?.(path)
   );
-}
+};
 
-/**
- * Renders children when `value` is filled in, or while its item is selected
- * in the editor (so empty fields can be typed into). Never shows empty fields in print.
- */
-export function Show({
+export const Show = ({
   path,
   value,
   children,
@@ -82,10 +66,10 @@ export function Show({
   path: string;
   value: string;
   children: ReactNode;
-}) {
+}) => {
   const expanded = useExpanded(path);
   return value || expanded ? children : null;
-}
+};
 
 interface PairField {
   path: string;
@@ -93,8 +77,7 @@ interface PairField {
   value: string;
 }
 
-/** Two fields on one line with a separator, e.g. "Company - City" or "2019 - 2021". */
-export function Pair({
+export const Pair = ({
   a,
   b,
   item,
@@ -106,7 +89,7 @@ export function Pair({
   item: string;
   separator: string;
   className?: string;
-}) {
+}) => {
   const expanded = useExpanded(item);
   const showA = Boolean(a.value) || expanded;
   const showB = Boolean(b.value) || expanded;
@@ -124,7 +107,7 @@ export function Pair({
       ) : null}
     </p>
   );
-}
+};
 
 const CONTACT_FIELDS = [
   { key: "email", placeholder: m.cv_ph_email },
@@ -133,8 +116,7 @@ const CONTACT_FIELDS = [
   { key: "website", placeholder: m.cv_ph_website },
 ] as const;
 
-/** Email, phone, location, website and links as an inline list. */
-export function Contacts({
+export const Contacts = ({
   cv,
   className,
   separator,
@@ -144,7 +126,7 @@ export function Contacts({
   className?: string;
   separator?: ReactNode;
   itemClassName?: string;
-}) {
+}) => {
   const expanded = useExpanded("basics");
   const b = cv.basics;
   const items: { key: string; node: ReactNode }[] = [];
@@ -162,7 +144,7 @@ export function Contacts({
       });
     }
   }
-  b.links.forEach((l, i) => {
+  for (const [i, l] of b.links.entries()) {
     if (l.url || expanded) {
       items.push({
         key: l.id,
@@ -175,7 +157,7 @@ export function Contacts({
         ),
       });
     }
-  });
+  }
   if (items.length === 0) {
     return null;
   }
@@ -189,10 +171,9 @@ export function Contacts({
       ))}
     </ul>
   );
-}
+};
 
-/** The profile photo. In the editor, click it to upload or replace. */
-export function Photo({
+export const Photo = ({
   cv,
   className,
   width,
@@ -202,7 +183,7 @@ export function Photo({
   className?: string;
   width: number;
   height: number;
-}) {
+}) => {
   const ed = useEditor();
   const expanded = useExpanded("basics");
   const input = useRef<HTMLInputElement>(null);
@@ -237,7 +218,7 @@ export function Photo({
     />
   ) : (
     <span
-      className={`${className ?? ""} flex items-center justify-center border border-[#d4d4d4] border-dashed text-[#a3a3a3]`}
+      className={`${className ?? ""} flex items-center justify-center border border-dashed border-[#d4d4d4] text-[#a3a3a3]`}
       style={{ width, height }}
     >
       <Icon className="size-5" icon={ImageAdd01Icon} />
@@ -265,10 +246,9 @@ export function Photo({
       />
     </>
   );
-}
+};
 
-/** Start and end date on one line, e.g. "Jul 2020 – Aug 2025". */
-export function DateRange({
+export const DateRange = ({
   p,
   start,
   end,
@@ -280,20 +260,17 @@ export function DateRange({
   end: string;
   className?: string;
   separator?: string;
-}) {
-  return (
-    <Pair
-      a={{ path: `${p}.start`, value: start, placeholder: m.cv_ph_start() }}
-      b={{ path: `${p}.end`, value: end, placeholder: m.cv_ph_end() }}
-      className={className}
-      item={p}
-      separator={separator}
-    />
-  );
-}
+}) => (
+  <Pair
+    a={{ path: `${p}.start`, value: start, placeholder: m.cv_ph_start() }}
+    b={{ path: `${p}.end`, value: end, placeholder: m.cv_ph_end() }}
+    className={className}
+    item={p}
+    separator={separator}
+  />
+);
 
-/** One skill item as "Title: text", selectable and draggable within its group. */
-export function SkillLine({
+export const SkillLine = ({
   group,
   index,
   item,
@@ -305,7 +282,7 @@ export function SkillLine({
   item: SkillItem;
   className?: string;
   titleClassName?: string;
-}) {
+}) => {
   const ip = `${group}.items.${index}`;
   const expanded = useExpanded(ip);
   const showTitle = Boolean(item.title) || expanded;
@@ -338,10 +315,9 @@ export function SkillLine({
       ) : null}
     </Sel>
   );
-}
+};
 
-/** All languages on one line: "German (native), English (fluent)". */
-export function InlineLanguages({
+export const InlineLanguages = ({
   cv,
   className,
   separator = ", ",
@@ -355,36 +331,34 @@ export function InlineLanguages({
   open?: string;
   close?: string;
   levelClassName?: string;
-}) {
-  return (
-    <div className={className}>
-      {cv.languages.map((l, i) => (
-        <Sel
-          className="inline"
-          key={l.id}
-          label={m.cv_sel_language()}
-          list="languages"
-          path={`languages.${i}`}
-        >
-          {i > 0 ? separator : null}
-          <E
-            path={`languages.${i}.name`}
-            placeholder={m.cv_ph_language()}
-            value={l.name}
-          />
-          <Show path={`languages.${i}`} value={l.level}>
-            <span className={levelClassName}>
-              {open}
-              <E
-                path={`languages.${i}.level`}
-                placeholder={m.cv_ph_level()}
-                value={l.level}
-              />
-              {close}
-            </span>
-          </Show>
-        </Sel>
-      ))}
-    </div>
-  );
-}
+}) => (
+  <div className={className}>
+    {cv.languages.map((l, i) => (
+      <Sel
+        className="inline"
+        key={l.id}
+        label={m.cv_sel_language()}
+        list="languages"
+        path={`languages.${i}`}
+      >
+        {i > 0 ? separator : null}
+        <E
+          path={`languages.${i}.name`}
+          placeholder={m.cv_ph_language()}
+          value={l.name}
+        />
+        <Show path={`languages.${i}`} value={l.level}>
+          <span className={levelClassName}>
+            {open}
+            <E
+              path={`languages.${i}.level`}
+              placeholder={m.cv_ph_level()}
+              value={l.level}
+            />
+            {close}
+          </span>
+        </Show>
+      </Sel>
+    ))}
+  </div>
+);

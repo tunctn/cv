@@ -1,27 +1,20 @@
-/**
- * Downscales an image file to a JPEG, stores it (R2, by content hash) and
- * returns the URL the CV keeps as its photo.
- */
-export async function fileToPhoto(file: File, max = 480): Promise<string> {
+export const fileToPhoto = async (file: File, max = 480): Promise<string> => {
   const url = URL.createObjectURL(file);
   try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const i = new Image();
-      i.onload = () => resolve(i);
-      i.onerror = reject;
-      i.src = url;
-    });
+    const img = new Image();
+    img.src = url;
+    await img.decode();
     const scale = Math.min(1, max / Math.max(img.width, img.height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(img.width * scale);
-    canvas.height = Math.round(img.height * scale);
-    canvas.getContext("2d")?.drawImage(img, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", 0.86)
+    const canvas = new OffscreenCanvas(
+      Math.round(img.width * scale),
+      Math.round(img.height * scale)
     );
-    if (!blob) {
-      throw new Error("Couldn't encode the photo");
-    }
+    canvas.getContext("2d")?.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const blob = await canvas
+      .convertToBlob({ type: "image/jpeg", quality: 0.86 })
+      .catch(() => {
+        throw new Error("Couldn't encode the photo");
+      });
     const res = await fetch("/api/photo", {
       method: "POST",
       headers: { "content-type": "image/jpeg" },
@@ -34,4 +27,4 @@ export async function fileToPhoto(file: File, max = 480): Promise<string> {
   } finally {
     URL.revokeObjectURL(url);
   }
-}
+};

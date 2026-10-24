@@ -4,8 +4,7 @@
 
 # SmileCV
 
-**Write a CV you're happy to send.**<br />
-An open-source CV builder: edit the page by hand or ask the AI, then download a PDF that looks exactly like the editor.
+**Write a CV you're happy to send.**<br /> An open-source CV builder: edit the page by hand or ask the AI, then download a PDF that looks exactly like the editor.
 
 [Open the app](https://smilecv.com) · [Features](#features) · [Run it locally](#local-development) · [How it works](#how-it-works)
 
@@ -13,7 +12,7 @@ An open-source CV builder: edit the page by hand or ask the AI, then download a 
 
 ## Features
 
-| | |
+|  |  |
 | --- | --- |
 | **Ask for changes in plain words** | The AI chat edits the CV with the same actions you have: rewrite a bullet, fill a section, reorder, translate. Each change lands on the page as it happens and can be undone. It never invents employers, dates or numbers. |
 | **Import the CV you already have** | Drop in a PDF, a photo or pasted text and it gets sorted into sections. Or paste a job ad and tailor the CV to it. |

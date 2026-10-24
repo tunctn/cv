@@ -1,11 +1,6 @@
 import { toCanvas } from "html-to-image";
-import {
-  type RefObject,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { RefObject } from "react";
 
 import { m } from "#/paraglide/messages.js";
 
@@ -27,22 +22,17 @@ interface Rect {
   y: number;
 }
 
-function intersects(a: DOMRect, r: Rect) {
-  return (
-    a.right > r.x && a.left < r.x + r.w && a.bottom > r.y && a.top < r.y + r.h
-  );
-}
+const intersects = (a: DOMRect, r: Rect) =>
+  a.right > r.x && a.left < r.x + r.w && a.bottom > r.y && a.top < r.y + r.h;
 
-function normalize(x0: number, y0: number, x1: number, y1: number): Rect {
-  return {
-    x: Math.min(x0, x1),
-    y: Math.min(y0, y1),
-    w: Math.abs(x1 - x0),
-    h: Math.abs(y1 - y0),
-  };
-}
+const normalize = (x0: number, y0: number, x1: number, y1: number): Rect => ({
+  x: Math.min(x0, x1),
+  y: Math.min(y0, y1),
+  w: Math.abs(x1 - x0),
+  h: Math.abs(y1 - y0),
+});
 
-async function capture(sheet: HTMLElement, r: Rect, scale: number) {
+const capture = async (sheet: HTMLElement, r: Rect, scale: number) => {
   const box = sheet.getBoundingClientRect();
   const ratio = 2;
   const full = await toCanvas(sheet, { pixelRatio: ratio, cacheBust: true });
@@ -55,10 +45,42 @@ async function capture(sheet: HTMLElement, r: Rect, scale: number) {
   out.height = Math.max(1, Math.round(sh));
   out.getContext("2d")?.drawImage(full, sx, sy, sw, sh, 0, 0, sw, sh);
   return out.toDataURL("image/png");
-}
+};
 
-/** Drag a rectangle over the pages to send that area (picture + text) to the AI. */
-export function ClipOverlay({
+/** The fields and image under `r`, inside the editor content. */
+const clipArea = async (
+  content: RefObject<HTMLDivElement | null>,
+  r: Rect,
+  scale: number
+): Promise<ClipResult> => {
+  const root = content.current;
+  const fields: ClipField[] = [];
+  if (!root) {
+    return { image: null, fields };
+  }
+  for (const el of root.querySelectorAll<HTMLElement>(
+    ".cv-sheet [data-edit-path]"
+  )) {
+    if (intersects(el.getBoundingClientRect(), r) && el.textContent.trim()) {
+      fields.push({
+        path: el.dataset.editPath ?? "",
+        text: el.textContent.trim(),
+      });
+    }
+  }
+  const sheet = [...root.querySelectorAll<HTMLElement>(".cv-sheet")].find((s) =>
+    intersects(s.getBoundingClientRect(), r)
+  );
+  let image: string | null = null;
+  try {
+    image = sheet ? await capture(sheet, r, scale) : null;
+  } catch {
+    image = null;
+  }
+  return { image, fields };
+};
+
+export const ClipOverlay = ({
   content,
   scale,
   onDone,
@@ -66,7 +88,7 @@ export function ClipOverlay({
   content: RefObject<HTMLDivElement | null>;
   scale: number;
   onDone: (clip: ClipResult | null) => void;
-}) {
+}) => {
   const start = useRef<{ x: number; y: number } | null>(null);
   const [rect, setRect] = useState<Rect | null>(null);
   const [busy, setBusy] = useState(false);
@@ -98,35 +120,15 @@ export function ClipOverlay({
   const onUp = useCallback(async () => {
     const r = rect;
     start.current = null;
-    const root = content.current;
-    if (!(r && root) || r.w < 8 || r.h < 8) {
+    if (!r || r.w < 8 || r.h < 8 || !content.current) {
       setRect(null);
       return;
     }
     setBusy(true);
-    const fields: ClipField[] = [];
-    for (const el of root.querySelectorAll<HTMLElement>(
-      ".cv-sheet [data-edit-path]"
-    )) {
-      if (intersects(el.getBoundingClientRect(), r) && el.innerText.trim()) {
-        fields.push({
-          path: el.dataset.editPath ?? "",
-          text: el.innerText.trim(),
-        });
-      }
-    }
-    const sheet = Array.from(
-      root.querySelectorAll<HTMLElement>(".cv-sheet")
-    ).find((s) => intersects(s.getBoundingClientRect(), r));
-    let image: string | null = null;
-    try {
-      image = sheet ? await capture(sheet, r, scale) : null;
-    } catch {
-      image = null;
-    }
+    const clip = await clipArea(content, r, scale);
     setBusy(false);
     setRect(null);
-    onDone({ image, fields });
+    onDone(clip);
   }, [rect, content, scale, onDone]);
 
   return (
@@ -136,7 +138,7 @@ export function ClipOverlay({
       onPointerMove={onMove}
       onPointerUp={onUp}
     >
-      <p className="cv-clip-hint pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1.5 font-medium text-[13px] text-primary-foreground shadow-lg">
+      <p className="cv-clip-hint bg-primary text-primary-foreground pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 rounded-full px-4 py-1.5 text-[13px] font-medium shadow-lg">
         {busy ? m.ed_clip_capturing() : m.ed_clip_hint()}
       </p>
       {rect ? (
@@ -147,4 +149,4 @@ export function ClipOverlay({
       ) : null}
     </div>
   );
-}
+};

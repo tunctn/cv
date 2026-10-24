@@ -8,6 +8,7 @@ import {
 import type { UIMessage } from "ai";
 import { memo, useState } from "react";
 import Markdown from "react-markdown";
+
 import { Icon } from "#/components/icon";
 import { FileType, getFileType } from "#/components/reui/file-type";
 import { Bubble, BubbleContent } from "#/components/ui/bubble";
@@ -24,14 +25,15 @@ import {
 } from "#/components/ui/trace";
 import { cn } from "#/lib/utils";
 import { m } from "#/paraglide/messages.js";
+
 import {
   CONTEXT_MARK,
-  type ContextSummary,
   filePartBytes,
   formatBytes,
   parseContexts,
   TOOL_LABELS,
 } from "./shared";
+import type { ContextSummary } from "./shared";
 
 type Part = UIMessage["parts"][number];
 
@@ -46,11 +48,25 @@ type Segment =
   | { kind: "text"; text: string }
   | { kind: "steps"; tools: ToolStep[]; thoughts: Part[] };
 
-function isToolPart(part: Part) {
-  return part.type.startsWith("tool-") || part.type === "dynamic-tool";
-}
+const isToolPart = (part: Part) =>
+  part.type.startsWith("tool-") || part.type === "dynamic-tool";
 
-function toolStep(part: Part): ToolStep {
+const toolLabel = (name: string, part: Part) => {
+  if (name === "web_search") {
+    // The hosted search reports what it looked up in its output.
+    const output = ("output" in part ? part.output : undefined) as
+      | { action?: { queries?: string[]; query?: string } }
+      | undefined;
+    const action = output?.action;
+    const query = action?.queries?.[0] ?? action?.query;
+    return query
+      ? m.chat_tool_web_search_query({ query })
+      : m.chat_tool_web_search();
+  }
+  return TOOL_LABELS[name]?.() ?? name.replaceAll("_", " ");
+};
+
+const toolStep = (part: Part): ToolStep => {
   const name =
     part.type === "dynamic-tool" && "toolName" in part
       ? String(part.toolName)
@@ -67,25 +83,19 @@ function toolStep(part: Part): ToolStep {
     search: name === "web_search",
     state: s,
   };
-}
+};
 
-function toolLabel(name: string, part: Part) {
-  if (name === "web_search") {
-    // The hosted search reports what it looked up in its output.
-    const output = ("output" in part ? part.output : undefined) as
-      | { action?: { queries?: string[]; query?: string } }
-      | undefined;
-    const action = output?.action;
-    const query = action?.queries?.[0] ?? action?.query;
-    return query
-      ? m.chat_tool_web_search_query({ query })
-      : m.chat_tool_web_search();
+const WWW = /^www\./u;
+
+const hostOf = (url: string) => {
+  try {
+    return new URL(url).hostname.replace(WWW, "");
+  } catch {
+    return url;
   }
-  return TOOL_LABELS[name]?.() ?? name.replaceAll("_", " ");
-}
+};
 
-/** Pages the AI read while searching, once each, in the order found. */
-function sourcesOf(parts: Part[]) {
+const sourcesOf = (parts: Part[]) => {
   // One chip per site: the first page read from each.
   const seen = new Set<string>();
   const out: { url: string; title?: string }[] = [];
@@ -96,47 +106,35 @@ function sourcesOf(parts: Part[]) {
     }
   }
   return out;
-}
+};
 
-const WWW = /^www\./;
-
-function hostOf(url: string) {
-  try {
-    return new URL(url).hostname.replace(WWW, "");
-  } catch {
-    return url;
-  }
-}
-
-function Sources({ sources }: { sources: { url: string; title?: string }[] }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <span className="text-[12px] text-muted-foreground">
-        {m.chat_sources()}
-      </span>
-      <div className="flex flex-wrap gap-1.5">
-        {sources.slice(0, 8).map((s) => (
-          <a
-            className="max-w-[220px] truncate rounded-full bg-surface px-2.5 py-1 text-[12px] text-foreground/80 transition-colors hover:bg-surface-2 hover:text-foreground"
-            href={s.url}
-            key={s.url}
-            rel="noopener noreferrer"
-            target="_blank"
-            title={s.title || s.url}
-          >
-            {hostOf(s.url)}
-          </a>
-        ))}
-      </div>
+const Sources = ({
+  sources,
+}: {
+  sources: { url: string; title?: string }[];
+}) => (
+  <div className="flex flex-col gap-1.5">
+    <span className="text-muted-foreground text-[12px]">
+      {m.chat_sources()}
+    </span>
+    <div className="flex flex-wrap gap-1.5">
+      {sources.slice(0, 8).map((s) => (
+        <a
+          className="bg-surface text-foreground/80 hover:bg-surface-2 hover:text-foreground max-w-[220px] truncate rounded-full px-2.5 py-1 text-[12px] transition-colors"
+          href={s.url}
+          key={s.url}
+          rel="noopener noreferrer"
+          target="_blank"
+          title={s.title || s.url}
+        >
+          {hostOf(s.url)}
+        </a>
+      ))}
     </div>
-  );
-}
+  </div>
+);
 
-/**
- * Folds an assistant message into text blocks plus ONE steps group (all tool
- * calls and reasoning), placed where the first step happened.
- */
-function segments(parts: Part[]) {
+const segments = (parts: Part[]) => {
   const out: Segment[] = [];
   let steps: Extract<Segment, { kind: "steps" }> | null = null;
   for (const part of parts) {
@@ -165,53 +163,119 @@ function segments(parts: Part[]) {
     }
   }
   return out;
-}
+};
 
-export const ChatMessage = memo(function ChatMessageView({
-  message,
-  streaming,
+const PNG_EXT = /\.png$/u;
+
+const CARD =
+  "m-px flex w-fit max-w-full items-center gap-3 rounded-2xl bg-background p-2 pr-4 text-left shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-foreground/[0.08]";
+
+const ContextCard = ({
+  context,
+  image,
 }: {
-  message: UIMessage;
-  /** True while this message is the one being streamed. */
-  streaming: boolean;
-}) {
-  if (message.role === "user") {
-    return <UserMessage message={message} />;
-  }
-  const segs = segments(message.parts);
-  const sources = sourcesOf(message.parts);
-  const lastPart = message.parts.at(-1);
-  const toolsStillGoing =
-    streaming && lastPart !== undefined && lastPart.type !== "text";
+  context: ContextSummary;
+  image?: string;
+}) => {
+  const n = context.fields.length;
   return (
-    <Message>
-      <MessageContent className="gap-3">
-        {segs.map((seg, i) =>
-          seg.kind === "text" ? (
-            // biome-ignore lint/suspicious/noArrayIndexKey: segments are derived from append-only parts, so the index is stable
-            <Reply key={i} text={seg.text} />
-          ) : (
-            <Steps
-              // biome-ignore lint/suspicious/noArrayIndexKey: there is at most one steps group per message
-              key={i}
-              running={toolsStillGoing}
-              streaming={streaming}
-              thoughts={seg.thoughts}
-              tools={seg.tools}
-            />
-          )
-        )}
-        {sources.length > 0 && !streaming ? (
-          <Sources sources={sources} />
-        ) : null}
-      </MessageContent>
-    </Message>
+    <div className={CARD}>
+      {image ? (
+        <img
+          alt=""
+          className="ring-foreground/[0.06] size-11 shrink-0 rounded-[10px] bg-white object-cover object-top ring-1"
+          height={44}
+          src={image}
+          width={44}
+        />
+      ) : (
+        <span className="bg-surface flex size-11 shrink-0 items-center justify-center rounded-[10px]">
+          <Icon className="text-muted-foreground size-5" icon={SparklesIcon} />
+        </span>
+      )}
+      <span className="min-w-0">
+        <span className="block truncate text-[13px] font-medium">
+          {context.label}
+        </span>
+        <span className="text-muted-foreground block truncate text-[12px]">
+          {n > 0
+            ? (n === 1
+                ? m.chat_fields_from_cv_one
+                : m.chat_fields_from_cv_other)({ count: n })
+            : m.chat_part_of_cv()}
+        </span>
+      </span>
+    </div>
   );
-});
+};
 
-const PNG_EXT = /\.png$/;
+const FileCard = ({
+  name,
+  mediaType,
+  url,
+}: {
+  name: string;
+  mediaType: string;
+  url: string;
+}) => {
+  const kind = getFileType(name || mediaType);
+  const bytes = filePartBytes(url);
+  const size = bytes === null ? null : formatBytes(bytes);
+  return (
+    <div className={CARD}>
+      <FileType className="shrink-0" size="default" type={kind} />
+      <span className="min-w-0">
+        <span className="block max-w-[220px] truncate text-[13px] font-medium">
+          {name}
+        </span>
+        <span className="text-muted-foreground block text-[12px] tracking-wide uppercase">
+          {String(kind)}
+          {size ? (
+            <span className="tracking-normal normal-case"> · {size}</span>
+          ) : null}
+        </span>
+      </span>
+    </div>
+  );
+};
 
-function UserMessage({ message }: { message: UIMessage }) {
+const UserPart = ({ part }: { part: Part }) => {
+  if (part.type === "text") {
+    if (!part.text || part.text.startsWith(CONTEXT_MARK)) {
+      return null;
+    }
+    return (
+      <Bubble align="end" className="max-w-[88%]">
+        <BubbleContent className="rounded-[20px] px-4 py-2.5 text-[15px] whitespace-pre-wrap">
+          {part.text.length > 600 ? `${part.text.slice(0, 600)}…` : part.text}
+        </BubbleContent>
+      </Bubble>
+    );
+  }
+  if (part.type === "file") {
+    if (part.mediaType.startsWith("image/") && part.url.startsWith("data:")) {
+      return (
+        <img
+          alt={part.filename ?? ""}
+          className="ring-foreground/[0.08] max-h-40 w-auto max-w-[70%] rounded-2xl object-contain ring-1"
+          height={160}
+          src={part.url}
+          width={280}
+        />
+      );
+    }
+    return (
+      <FileCard
+        mediaType={part.mediaType}
+        name={part.filename ?? m.chat_attachment()}
+        url={part.url}
+      />
+    );
+  }
+  return null;
+};
+
+const UserMessage = ({ message }: { message: UIMessage }) => {
   // A clip arrives as a context part plus its screenshot ("<label>.png");
   // show them together as one card.
   const contexts = message.parts.flatMap((p) =>
@@ -235,7 +299,7 @@ function UserMessage({ message }: { message: UIMessage }) {
               <ContextCard
                 context={c}
                 image={shots.get(c.label)}
-                // biome-ignore lint/suspicious/noArrayIndexKey: contexts are a fixed list per message
+                // oxlint-disable-next-line react/no-array-index-key -- contexts are a fixed list per message
                 key={i}
               />
             ))}
@@ -246,144 +310,33 @@ function UserMessage({ message }: { message: UIMessage }) {
           part.filename &&
           shots.has(part.filename.replace(PNG_EXT, "")) &&
           contexts.some((c) => `${c.label}.png` === part.filename) ? null : (
-            // biome-ignore lint/suspicious/noArrayIndexKey: message parts have no ids and are only ever appended, so the index is stable
+            // oxlint-disable-next-line react/no-array-index-key -- message parts have no ids and are only ever appended, so the index is stable
             <UserPart key={i} part={part} />
           )
         )}
       </MessageContent>
     </Message>
   );
-}
-
-const CARD =
-  "m-px flex w-fit max-w-full items-center gap-3 rounded-2xl bg-background p-2 pr-4 text-left shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-foreground/[0.08]";
-
-/** A part of the CV the user pointed at: thumbnail (or icon), label, field count. */
-function ContextCard({
-  context,
-  image,
-}: {
-  context: ContextSummary;
-  image?: string;
-}) {
-  const n = context.fields.length;
-  return (
-    <div className={CARD}>
-      {image ? (
-        <img
-          alt=""
-          className="size-11 shrink-0 rounded-[10px] bg-white object-cover object-top ring-1 ring-foreground/[0.06]"
-          height={44}
-          src={image}
-          width={44}
-        />
-      ) : (
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-[10px] bg-surface">
-          <Icon className="size-5 text-muted-foreground" icon={SparklesIcon} />
-        </span>
-      )}
-      <span className="min-w-0">
-        <span className="block truncate font-medium text-[13px]">
-          {context.label}
-        </span>
-        <span className="block truncate text-[12px] text-muted-foreground">
-          {n > 0
-            ? (n === 1
-                ? m.chat_fields_from_cv_one
-                : m.chat_fields_from_cv_other)({ count: n })
-            : m.chat_part_of_cv()}
-        </span>
-      </span>
-    </div>
-  );
-}
-
-/** An attached file: type badge, name, type and size. */
-function FileCard({
-  name,
-  mediaType,
-  url,
-}: {
-  name: string;
-  mediaType: string;
-  url: string;
-}) {
-  const kind = getFileType(name || mediaType);
-  const bytes = filePartBytes(url);
-  const size = bytes === null ? null : formatBytes(bytes);
-  return (
-    <div className={CARD}>
-      <FileType className="shrink-0" size="default" type={kind} />
-      <span className="min-w-0">
-        <span className="block max-w-[220px] truncate font-medium text-[13px]">
-          {name}
-        </span>
-        <span className="block text-[12px] text-muted-foreground uppercase tracking-wide">
-          {String(kind)}
-          {size ? (
-            <span className="normal-case tracking-normal"> · {size}</span>
-          ) : null}
-        </span>
-      </span>
-    </div>
-  );
-}
-
-function UserPart({ part }: { part: Part }) {
-  if (part.type === "text") {
-    if (!part.text || part.text.startsWith(CONTEXT_MARK)) {
-      return null;
-    }
-    return (
-      <Bubble align="end" className="max-w-[88%]">
-        <BubbleContent className="whitespace-pre-wrap rounded-[20px] px-4 py-2.5 text-[15px]">
-          {part.text.length > 600 ? `${part.text.slice(0, 600)}…` : part.text}
-        </BubbleContent>
-      </Bubble>
-    );
-  }
-  if (part.type === "file") {
-    if (part.mediaType.startsWith("image/") && part.url.startsWith("data:")) {
-      return (
-        <img
-          alt={part.filename ?? ""}
-          className="max-h-40 w-auto max-w-[70%] rounded-2xl object-contain ring-1 ring-foreground/[0.08]"
-          height={160}
-          src={part.url}
-          width={280}
-        />
-      );
-    }
-    return (
-      <FileCard
-        mediaType={part.mediaType}
-        name={part.filename ?? m.chat_attachment()}
-        url={part.url}
-      />
-    );
-  }
-  return null;
-}
+};
 
 const MD_CLASS = cn(
-  "text-[15px] text-foreground leading-relaxed",
-  "[&>*+*]:mt-3 [&_li+li]:mt-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5",
+  "text-foreground text-[15px] leading-relaxed",
+  "[&_li+li]:mt-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&>*+*]:mt-3",
   "[&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_strong]:font-semibold",
   "[&_a]:underline [&_a]:underline-offset-2",
-  "[&_code]:rounded-md [&_code]:bg-surface [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[13px]",
-  "[&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-surface [&_pre]:p-3"
+  "[&_code]:bg-surface [&_code]:rounded-md [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[13px]",
+  "[&_pre]:bg-surface [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:p-3"
 );
 
-const Reply = memo(function ReplyView({ text }: { text: string }) {
-  return (
-    <div className={MD_CLASS}>
-      <Markdown>{text}</Markdown>
-    </div>
-  );
-});
+const ReplyText = ({ text }: { text: string }) => (
+  <div className={MD_CLASS}>
+    <Markdown>{text}</Markdown>
+  </div>
+);
 
-/** Same label repeated (e.g. 5× "Updated experience") collapses to one row. */
-function groupSteps(tools: ToolStep[]) {
+const Reply = memo(ReplyText);
+
+const groupSteps = (tools: ToolStep[]) => {
   const map = new Map<
     string,
     { label: string; count: number; running: boolean; failed: boolean }
@@ -401,37 +354,9 @@ function groupSteps(tools: ToolStep[]) {
     map.set(t.label, row);
   }
   return [...map.values()];
-}
+};
 
-function Steps({
-  tools,
-  thoughts,
-  running,
-  streaming,
-}: {
-  tools: ToolStep[];
-  thoughts: Part[];
-  running: boolean;
-  streaming: boolean;
-}) {
-  return (
-    <Trace>
-      {thoughts.map((t, i) => (
-        <Thought
-          // biome-ignore lint/suspicious/noArrayIndexKey: reasoning parts are append-only
-          key={i}
-          running={streaming && "state" in t && t.state === "streaming"}
-          text={"text" in t ? String(t.text) : ""}
-        />
-      ))}
-      {tools.length > 0 ? (
-        <ToolGroup running={running} streaming={streaming} tools={tools} />
-      ) : null}
-    </Trace>
-  );
-}
-
-function ToolGroup({
+const ToolGroup = ({
   tools,
   running,
   streaming,
@@ -439,7 +364,7 @@ function ToolGroup({
   tools: ToolStep[];
   running: boolean;
   streaming: boolean;
-}) {
+}) => {
   const rows = groupSteps(tools);
   const failed = tools.filter((t) => t.state === "error").length;
   // A step that never finished and the stream is over was cut off.
@@ -513,9 +438,9 @@ function ToolGroup({
       </TraceCollapsibleContent>
     </TraceCollapsible>
   );
-}
+};
 
-function Thought({ text, running }: { text: string; running: boolean }) {
+const Thought = ({ text, running }: { text: string; running: boolean }) => {
   const [open, setOpen] = useState<boolean | null>(null);
   return (
     <TraceCollapsible onOpenChange={setOpen} open={open ?? running}>
@@ -538,17 +463,85 @@ function Thought({ text, running }: { text: string; running: boolean }) {
       </TraceCollapsibleContent>
     </TraceCollapsible>
   );
-}
+};
 
-export function Thinking() {
+const Steps = ({
+  tools,
+  thoughts,
+  running,
+  streaming,
+}: {
+  tools: ToolStep[];
+  thoughts: Part[];
+  running: boolean;
+  streaming: boolean;
+}) => (
+  <Trace>
+    {thoughts.map((t, i) => (
+      <Thought
+        // oxlint-disable-next-line react/no-array-index-key -- reasoning parts are append-only
+        key={i}
+        running={streaming && "state" in t && t.state === "streaming"}
+        text={"text" in t ? String(t.text) : ""}
+      />
+    ))}
+    {tools.length > 0 ? (
+      <ToolGroup running={running} streaming={streaming} tools={tools} />
+    ) : null}
+  </Trace>
+);
+
+const ChatMessageView = ({
+  message,
+  streaming,
+}: {
+  message: UIMessage;
+  /** True while this message is the one being streamed. */
+  streaming: boolean;
+}) => {
+  if (message.role === "user") {
+    return <UserMessage message={message} />;
+  }
+  const segs = segments(message.parts);
+  const sources = sourcesOf(message.parts);
+  const lastPart = message.parts.at(-1);
+  const toolsStillGoing =
+    streaming && lastPart !== undefined && lastPart.type !== "text";
   return (
-    <Trace>
-      <TraceLine status="running">
-        <TraceIcon>
-          <Icon className="animate-spin" icon={LoaderCircleIcon} />
-        </TraceIcon>
-        <TraceTitle className="animate-pulse">{m.chat_thinking()}</TraceTitle>
-      </TraceLine>
-    </Trace>
+    <Message>
+      <MessageContent className="gap-3">
+        {segs.map((seg, i) =>
+          seg.kind === "text" ? (
+            // oxlint-disable-next-line react/no-array-index-key -- segments are derived from append-only parts, so the index is stable
+            <Reply key={i} text={seg.text} />
+          ) : (
+            <Steps
+              // oxlint-disable-next-line react/no-array-index-key -- there is at most one steps group per message
+              key={i}
+              running={toolsStillGoing}
+              streaming={streaming}
+              thoughts={seg.thoughts}
+              tools={seg.tools}
+            />
+          )
+        )}
+        {sources.length > 0 && !streaming ? (
+          <Sources sources={sources} />
+        ) : null}
+      </MessageContent>
+    </Message>
   );
-}
+};
+
+export const ChatMessage = memo(ChatMessageView);
+
+export const Thinking = () => (
+  <Trace>
+    <TraceLine status="running">
+      <TraceIcon>
+        <Icon className="animate-spin" icon={LoaderCircleIcon} />
+      </TraceIcon>
+      <TraceTitle className="animate-pulse">{m.chat_thinking()}</TraceTitle>
+    </TraceLine>
+  </Trace>
+);

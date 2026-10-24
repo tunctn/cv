@@ -6,7 +6,9 @@ import {
   createRootRouteWithContext,
   HeadContent,
   Scripts,
+  getRouteApi,
 } from "@tanstack/react-router";
+
 import { Analytics } from "#/components/analytics";
 import { CookieBanner } from "#/components/cookie-banner";
 import { SignupGate } from "#/components/signup-gate";
@@ -19,7 +21,10 @@ import { textDirection } from "#/lib/i18n";
 import { THEME_SCRIPT } from "#/lib/theme";
 import { m } from "#/paraglide/messages.js";
 import { getLocale } from "#/paraglide/runtime.js";
+
 import appCss from "../styles.css?url";
+
+const routeApi = getRouteApi("__root__");
 
 /** The UI font, fetched with the HTML so text never swaps fonts after load. */
 const PRELOAD_FONTS = [inter400, inter500, inter600].map((href) => ({
@@ -33,6 +38,28 @@ const PRELOAD_FONTS = [inter400, inter500, inter600].map((href) => ({
 interface MyRouterContext {
   queryClient: QueryClient;
 }
+
+const RootDocument = ({ children }: { children: React.ReactNode }) => {
+  const locale = getLocale();
+  const analytics = routeApi.useLoaderData();
+  return (
+    <html dir={textDirection(locale)} lang={locale} suppressHydrationWarning>
+      <head>
+        {/* oxlint-disable-next-line react/no-danger -- static, first-party theme bootstrap; prevents a flash of the wrong theme */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <HeadContent />
+      </head>
+      <body>
+        <TooltipProvider>{children}</TooltipProvider>
+        <Toaster position="bottom-center" />
+        <SignupGate />
+        <CookieBanner />
+        <Analytics config={analytics ?? null} />
+        <Scripts />
+      </body>
+    </html>
+  );
+};
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   // Umami settings: read once on the server, then kept for the visit.
@@ -61,25 +88,3 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   notFoundComponent: NotFoundPage,
   errorComponent: ErrorPage,
 });
-
-function RootDocument({ children }: { children: React.ReactNode }) {
-  const locale = getLocale();
-  const analytics = Route.useLoaderData();
-  return (
-    <html dir={textDirection(locale)} lang={locale} suppressHydrationWarning>
-      <head>
-        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: static, first-party theme bootstrap; prevents a flash of the wrong theme */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-        <HeadContent />
-      </head>
-      <body>
-        <TooltipProvider>{children}</TooltipProvider>
-        <Toaster position="bottom-center" />
-        <SignupGate />
-        <CookieBanner />
-        <Analytics config={analytics ?? null} />
-        <Scripts />
-      </body>
-    </html>
-  );
-}

@@ -9,47 +9,43 @@ import { authClient } from "#/lib/auth-client";
 import type { LastLoginMethod } from "#/lib/last-login";
 import { m } from "#/paraglide/messages.js";
 
-const SAFE_PATH = /^\/(?!\/)/;
+const SAFE_PATH = /^\/(?!\/)/u;
 
-/** Where to go after signing in: `?next=/cv/…` if it's a local path. */
-function nextPath() {
+const nextPath = () => {
   if (typeof window === "undefined") {
     return "/cvs";
   }
   const next = new URLSearchParams(window.location.search).get("next");
   return next && SAFE_PATH.test(next) ? next : "/cvs";
-}
+};
 
-function signInWithGoogle() {
+const signInWithGoogle = () => {
   authClient.signIn.social({ provider: "google", callbackURL: nextPath() });
-}
+};
 
-function subtitle(mode: "login" | "signup", isGuest: boolean) {
+const subtitle = (mode: "login" | "signup", isGuest: boolean) => {
   if (isGuest) {
     return m.auth_sub_guest();
   }
   return mode === "signup" ? m.auth_sub_signup() : m.auth_sub_login();
-}
+};
 
-function submitLabel(mode: "login" | "signup", busy: boolean) {
+const submitLabel = (mode: "login" | "signup", busy: boolean) => {
   if (busy) {
     return m.auth_busy();
   }
   return mode === "signup" ? m.common_sign_up() : m.common_log_in();
-}
+};
 
-/** Subtle pill marking the sign-in method used last time. */
-function LastUsedBadge({ className }: { className?: string }) {
-  return (
-    <span
-      className={`pointer-events-none rounded-full bg-surface px-2 py-0.5 font-medium text-[11px] text-muted-foreground leading-4 ${className ?? ""}`}
-    >
-      {m.auth_last_used()}
-    </span>
-  );
-}
+const LastUsedBadge = ({ className }: { className?: string }) => (
+  <span
+    className={`bg-surface text-muted-foreground pointer-events-none rounded-full px-2 py-0.5 text-[11px] leading-4 font-medium ${className ?? ""}`}
+  >
+    {m.auth_last_used()}
+  </span>
+);
 
-export function AuthForm({
+export const AuthForm = ({
   mode,
   googleEnabled,
   isGuest,
@@ -59,7 +55,7 @@ export function AuthForm({
   googleEnabled: boolean;
   isGuest: boolean;
   lastUsed: LastLoginMethod;
-}) {
+}) => {
   const router = useRouter();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
@@ -102,10 +98,10 @@ export function AuthForm({
           <Logo />
         </Link>
         <div className="my-auto w-full max-w-[380px] py-10">
-          <h1 className="text-center font-semibold text-[28px] tracking-[-0.03em]">
+          <h1 className="text-center text-[28px] font-semibold tracking-[-0.03em]">
             {mode === "signup" ? m.auth_title_signup() : m.auth_title_login()}
           </h1>
-          <p className="mt-2 text-center text-[15px] text-muted-foreground">
+          <p className="text-muted-foreground mt-2 text-center text-[15px]">
             {subtitle(mode, isGuest)}
           </p>
 
@@ -122,10 +118,10 @@ export function AuthForm({
                   <LastUsedBadge className="absolute end-2.5 top-1/2 -translate-y-1/2" />
                 ) : null}
               </Button>
-              <div className="my-6 flex items-center gap-3 text-muted-foreground text-xs">
-                <span className="h-px flex-1 bg-border" />
+              <div className="text-muted-foreground my-6 flex items-center gap-3 text-xs">
+                <span className="bg-border h-px flex-1" />
                 {m.auth_or()}
-                <span className="h-px flex-1 bg-border" />
+                <span className="bg-border h-px flex-1" />
               </div>
             </>
           ) : null}
@@ -171,7 +167,7 @@ export function AuthForm({
             </Field>
             {mode === "login" ? (
               <Link
-                className="ms-auto -mt-2 text-[13px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                className="text-muted-foreground hover:text-foreground ms-auto -mt-2 text-[13px] underline-offset-4 hover:underline"
                 to="/forgot-password"
               >
                 {m.auth_forgot_link()}
@@ -191,10 +187,10 @@ export function AuthForm({
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-muted-foreground text-sm">
+          <p className="text-muted-foreground mt-6 text-center text-sm">
             {mode === "signup" ? m.auth_have_account() : m.auth_new_here()}{" "}
             <Link
-              className="font-medium text-foreground underline-offset-4 hover:underline"
+              className="text-foreground font-medium underline-offset-4 hover:underline"
               to={mode === "signup" ? "/login" : "/signup"}
             >
               {mode === "signup" ? m.common_log_in() : m.auth_create_account()}
@@ -205,4 +201,4 @@ export function AuthForm({
       <SiteFooter />
     </div>
   );
-}
+};

@@ -1,6 +1,8 @@
 import { E, Sel } from "#/components/cv/editing";
 import { m } from "#/paraglide/messages.js";
-import { type Block, resolveStyle, type TemplateDef } from "../engine";
+
+import { resolveStyle } from "../engine";
+import type { Block, TemplateDef } from "../engine";
 import type { CV } from "../schema";
 import {
   Contacts,
@@ -16,12 +18,12 @@ import {
   Description,
   EntryDates,
   EntryLocation,
-  type EntryModel,
   EntryText,
   sectionStream,
 } from "./parts";
+import type { EntryModel } from "./parts";
 
-function Header({ cv, padX }: { cv: CV; padX: number }) {
+const Header = ({ cv, padX }: { cv: CV; padX: number }) => {
   const b = cv.basics;
   return (
     <Sel
@@ -34,7 +36,7 @@ function Header({ cv, padX }: { cv: CV; padX: number }) {
         style={{ padding: `44px ${padX}px 40px` }}
       >
         <div className="min-w-0">
-          <h1 className="font-bold text-[40px] leading-[1.02] tracking-[-0.035em]">
+          <h1 className="text-[40px] leading-[1.02] font-bold tracking-[-0.035em]">
             <E
               path="basics.name"
               placeholder={m.cv_ph_your_name()}
@@ -42,7 +44,7 @@ function Header({ cv, padX }: { cv: CV; padX: number }) {
             />
           </h1>
           <Show path="basics" value={b.headline}>
-            <p className="mt-2 font-medium text-[16px] text-white/85">
+            <p className="mt-2 text-[16px] font-medium text-white/85">
               <E
                 path="basics.headline"
                 placeholder={m.cv_ph_headline()}
@@ -64,53 +66,51 @@ function Header({ cv, padX }: { cv: CV; padX: number }) {
       </div>
     </Sel>
   );
-}
+};
 
-function entry(e: EntryModel, i: number): Block {
-  return {
-    key: e.id,
-    gap: i === 0 ? 12 : 18,
-    node: (
-      <Sel label={e.label} list={e.list} path={e.p}>
-        <div className="flex items-baseline justify-between gap-6">
-          <p className="min-w-0 font-bold text-[#141414] text-[14px] tracking-[-0.01em]">
-            <EntryText e={e} which="title" />
-          </p>
-          <p className="shrink-0 font-semibold text-[11.5px] text-[var(--cv-accent)] tabular-nums">
-            <EntryDates e={e} />
-          </p>
-        </div>
-        <p className="text-[#555] text-[12.4px]">
-          <EntryText className="font-medium" e={e} which="sub" />
-          <EntryLocation
-            before={
-              e.sub?.value ? <span className="text-[#bbb]"> / </span> : null
-            }
-            className="text-[#888]"
-            e={e}
-          />
+const entry = (e: EntryModel, i: number): Block => ({
+  key: e.id,
+  gap: i === 0 ? 12 : 18,
+  node: (
+    <Sel label={e.label} list={e.list} path={e.p}>
+      <div className="flex items-baseline justify-between gap-6">
+        <p className="min-w-0 text-[14px] font-bold tracking-[-0.01em] text-[#141414]">
+          <EntryText e={e} which="title" />
         </p>
-        <Description
-          className="mt-1.5 text-[#333]"
-          p={e.p}
-          value={e.description}
-        />
-        <Bullets
-          className="mt-1.5 space-y-[3px]"
-          itemClassName="relative pl-4"
-          items={e.highlights ?? []}
-          list={`${e.p}.highlights`}
-          marker={
-            <span className="absolute top-[0.55em] left-0 h-[6px] w-[6px] rounded-full border-[1.5px] border-[var(--cv-accent)]" />
+        <p className="shrink-0 text-[11.5px] font-semibold text-[var(--cv-accent)] tabular-nums">
+          <EntryDates e={e} />
+        </p>
+      </div>
+      <p className="text-[12.4px] text-[#555]">
+        <EntryText className="font-medium" e={e} which="sub" />
+        <EntryLocation
+          before={
+            e.sub?.value ? <span className="text-[#bbb]"> / </span> : null
           }
+          className="text-[#888]"
+          e={e}
         />
-      </Sel>
-    ),
-  };
-}
+      </p>
+      <Description
+        className="mt-1.5 text-[#333]"
+        p={e.p}
+        value={e.description}
+      />
+      <Bullets
+        className="mt-1.5 space-y-[3px]"
+        itemClassName="relative pl-4"
+        items={e.highlights ?? []}
+        list={`${e.p}.highlights`}
+        marker={
+          <span className="absolute top-[0.55em] left-0 h-[6px] w-[6px] rounded-full border-[1.5px] border-[var(--cv-accent)]" />
+        }
+      />
+    </Sel>
+  ),
+});
 
-function skills(cv: CV): Block[] {
-  return cv.skills.map((s, i) => {
+const skills = (cv: CV): Block[] =>
+  cv.skills.map((s, i) => {
     const p = `skills.${i}`;
     return {
       key: s.id,
@@ -118,7 +118,7 @@ function skills(cv: CV): Block[] {
       node: (
         <Sel label={m.cv_sel_skill_group()} list="skills" path={p}>
           <Show path={p} value={s.name}>
-            <p className="font-bold text-[13px]">
+            <p className="text-[13px] font-bold">
               <E
                 path={`${p}.name`}
                 placeholder={m.cv_ph_group_name()}
@@ -142,23 +142,20 @@ function skills(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function languages(cv: CV): Block[] {
-  return [
-    {
-      key: "languages",
-      gap: 12,
-      node: (
-        <InlineLanguages
-          cv={cv}
-          levelClassName="text-[#777]"
-          separator={<span className="mx-2 text-[#ccc]">/</span>}
-        />
-      ),
-    },
-  ];
-}
+const languages = (cv: CV): Block[] => [
+  {
+    key: "languages",
+    gap: 12,
+    node: (
+      <InlineLanguages
+        cv={cv}
+        levelClassName="text-[#777]"
+        separator={<span className="mx-2 text-[#ccc]">/</span>}
+      />
+    ),
+  },
+];
 
 /** Creative CV: a full-width colour block with name and photo, then airy entries. */
 export const portfolio: TemplateDef = {
@@ -185,7 +182,7 @@ export const portfolio: TemplateDef = {
         gap: 30,
         node: (
           <Sel label={m.cv_sel_profile()} path="basics.summary">
-            <p className="text-[#222] text-[14.5px] leading-[1.55]">
+            <p className="text-[14.5px] leading-[1.55] text-[#222]">
               <E
                 multiline
                 path="basics.summary"
@@ -210,7 +207,7 @@ export const portfolio: TemplateDef = {
               list="sections"
               path={`sections.${key}`}
             >
-              <h2 className="font-bold text-[#141414] text-[19px] tracking-[-0.02em]">
+              <h2 className="text-[19px] font-bold tracking-[-0.02em] text-[#141414]">
                 <E placeholder={m.cv_ph_section()} {...sectionLabel(cv, key)} />
               </h2>
               <span className="mt-1.5 block h-[3px] w-8 rounded-full bg-[var(--cv-accent)]" />

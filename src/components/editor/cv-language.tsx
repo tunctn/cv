@@ -23,12 +23,7 @@ import { LANGUAGE_NAMES } from "#/lib/i18n";
 import { m } from "#/paraglide/messages.js";
 import type { Locale } from "#/paraglide/runtime.js";
 
-/**
- * The language the CV is written in (separate from the app's language).
- * Switching an empty CV just relabels its headings; with content, it asks
- * whether the AI should translate everything too.
- */
-export function CvLanguage({
+export const CvLanguage = ({
   cv,
   onChange,
   onTranslate,
@@ -36,7 +31,7 @@ export function CvLanguage({
   cv: CV;
   onChange: (update: (cv: CV) => CV) => void;
   onTranslate: (locale: Locale) => void;
-}) {
+}) => {
   const current = cvLocale(cv.language);
   const [asking, setAsking] = useState<Locale | null>(null);
 
@@ -88,7 +83,7 @@ export function CvLanguage({
         <PopoverContent
           align="start"
           aria-label={m.ed_cv_language()}
-          className="max-h-(--available-height) w-[min(400px,calc(100vw-32px))] gap-0 overflow-y-auto p-1.5 [scrollbar-width:thin]"
+          className="max-h-(--available-height) w-[min(400px,calc(100vw-32px))] [scrollbar-width:thin] gap-0 overflow-y-auto p-1.5"
           sideOffset={8}
         >
           <LanguageGrid current={current} onPick={pick} />
@@ -97,7 +92,7 @@ export function CvLanguage({
       <AlertDialog onOpenChange={close} open={asking !== null}>
         <AlertDialogContent className="gap-5 rounded-[24px] p-6 sm:max-w-[400px]">
           <AlertDialogHeader className="gap-1.5 text-start sm:text-start">
-            <AlertDialogTitle className="font-semibold text-[18px] tracking-[-0.01em]">
+            <AlertDialogTitle className="text-[18px] font-semibold tracking-[-0.01em]">
               {m.ed_lang_title({
                 language: asking ? LANGUAGE_NAMES[asking] : "",
               })}
@@ -122,4 +117,4 @@ export function CvLanguage({
       </AlertDialog>
     </>
   );
-}
+};

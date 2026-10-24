@@ -1,5 +1,6 @@
 import { E, Sel } from "#/components/cv/editing";
 import { m } from "#/paraglide/messages.js";
+
 import type { Block, TemplateDef } from "../engine";
 import type { CV } from "../schema";
 import {
@@ -14,66 +15,64 @@ import {
   Description,
   EntryDates,
   EntryLocation,
-  type EntryModel,
   EntryText,
   hasDates,
   sectionStream,
 } from "./parts";
+import type { EntryModel } from "./parts";
 
 const MUTED = "text-[#8b949e]";
 /** Shell prompt shown above the name; code, not prose, so it is never translated. */
 const PROMPT = "~/cv $ whoami";
 
-function entry(e: EntryModel, i: number): Block {
-  return {
-    key: e.id,
-    gap: i === 0 ? 10 : 16,
-    node: (
-      <Sel label={e.label} list={e.list} path={e.p}>
-        <div className="flex items-baseline justify-between gap-4">
-          <p className="min-w-0 font-semibold text-[#111]">
-            <EntryText e={e} which="title" />
-            <EntryText
-              before={<span className={MUTED}> @ </span>}
-              className="text-[var(--cv-accent)]"
-              e={e}
-              which="sub"
-            />
-          </p>
-          {hasDates(e) ? (
-            <p className={`shrink-0 ${MUTED} text-[10.6px]`}>
-              [<EntryDates e={e} separator=" → " />]
-            </p>
-          ) : (
-            <p className="shrink-0">
-              <EntryDates e={e} separator=" → " />
-            </p>
-          )}
-        </div>
-        <p className={`${MUTED} text-[10.8px]`}>
-          <EntryLocation before="# " e={e} />
+const entry = (e: EntryModel, i: number): Block => ({
+  key: e.id,
+  gap: i === 0 ? 10 : 16,
+  node: (
+    <Sel label={e.label} list={e.list} path={e.p}>
+      <div className="flex items-baseline justify-between gap-4">
+        <p className="min-w-0 font-semibold text-[#111]">
+          <EntryText e={e} which="title" />
+          <EntryText
+            before={<span className={MUTED}> @ </span>}
+            className="text-[var(--cv-accent)]"
+            e={e}
+            which="sub"
+          />
         </p>
-        <Description
-          className="mt-1 text-[#30363d]"
-          p={e.p}
-          value={e.description}
-        />
-        <Bullets
-          className="mt-1 space-y-[2px]"
-          itemClassName="relative pl-[2ch]"
-          items={e.highlights ?? []}
-          list={`${e.p}.highlights`}
-          marker={
-            <span className="absolute left-0 text-[var(--cv-accent)]">-</span>
-          }
-        />
-      </Sel>
-    ),
-  };
-}
+        {hasDates(e) ? (
+          <p className={`shrink-0 ${MUTED} text-[10.6px]`}>
+            [<EntryDates e={e} separator=" → " />]
+          </p>
+        ) : (
+          <p className="shrink-0">
+            <EntryDates e={e} separator=" → " />
+          </p>
+        )}
+      </div>
+      <p className={`${MUTED} text-[10.8px]`}>
+        <EntryLocation before="# " e={e} />
+      </p>
+      <Description
+        className="mt-1 text-[#30363d]"
+        p={e.p}
+        value={e.description}
+      />
+      <Bullets
+        className="mt-1 space-y-[2px]"
+        itemClassName="relative pl-[2ch]"
+        items={e.highlights ?? []}
+        list={`${e.p}.highlights`}
+        marker={
+          <span className="absolute left-0 text-[var(--cv-accent)]">-</span>
+        }
+      />
+    </Sel>
+  ),
+});
 
-function skills(cv: CV): Block[] {
-  return cv.skills.map((s, i) => {
+const skills = (cv: CV): Block[] =>
+  cv.skills.map((s, i) => {
     const p = `skills.${i}`;
     return {
       key: s.id,
@@ -103,49 +102,46 @@ function skills(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function languages(cv: CV): Block[] {
-  return [
-    {
-      key: "languages",
-      gap: 10,
-      node: (
-        <div>
-          {cv.languages.map((l, i) => {
-            const p = `languages.${i}`;
-            return (
-              <Sel
-                key={l.id}
-                label={m.cv_sel_language()}
-                list="languages"
-                path={p}
-              >
-                <span className="text-[var(--cv-accent)]">
+const languages = (cv: CV): Block[] => [
+  {
+    key: "languages",
+    gap: 10,
+    node: (
+      <div>
+        {cv.languages.map((l, i) => {
+          const p = `languages.${i}`;
+          return (
+            <Sel
+              key={l.id}
+              label={m.cv_sel_language()}
+              list="languages"
+              path={p}
+            >
+              <span className="text-[var(--cv-accent)]">
+                <E
+                  path={`${p}.name`}
+                  placeholder={m.cv_ph_language()}
+                  value={l.name}
+                />
+              </span>
+              <Show path={p} value={l.level}>
+                <span>
+                  {": "}
                   <E
-                    path={`${p}.name`}
-                    placeholder={m.cv_ph_language()}
-                    value={l.name}
+                    path={`${p}.level`}
+                    placeholder={m.cv_ph_level()}
+                    value={l.level}
                   />
                 </span>
-                <Show path={p} value={l.level}>
-                  <span>
-                    {": "}
-                    <E
-                      path={`${p}.level`}
-                      placeholder={m.cv_ph_level()}
-                      value={l.level}
-                    />
-                  </span>
-                </Show>
-              </Sel>
-            );
-          })}
-        </div>
-      ),
-    },
-  ];
-}
+              </Show>
+            </Sel>
+          );
+        })}
+      </div>
+    ),
+  },
+];
 
 /** A developer CV in monospace, with quiet code-style markers. */
 export const terminal: TemplateDef = {
@@ -169,7 +165,7 @@ export const terminal: TemplateDef = {
         node: (
           <Sel label={m.cv_sel_details()} path="basics">
             <p className={`${MUTED} text-[11px]`}>{PROMPT}</p>
-            <h1 className="mt-1 font-semibold text-[#0d1117] text-[28px] leading-[1.15] tracking-[-0.02em]">
+            <h1 className="mt-1 text-[28px] leading-[1.15] font-semibold tracking-[-0.02em] text-[#0d1117]">
               <E
                 path="basics.name"
                 placeholder={m.cv_ph_your_name()}
@@ -201,7 +197,7 @@ export const terminal: TemplateDef = {
         gap: 20,
         node: (
           <Sel label={m.cv_sel_profile()} path="basics.summary">
-            <p className="border-[var(--cv-accent)] border-l-2 pl-3 text-[#30363d]">
+            <p className="border-l-2 border-[var(--cv-accent)] pl-3 text-[#30363d]">
               <E
                 multiline
                 path="basics.summary"
@@ -226,7 +222,7 @@ export const terminal: TemplateDef = {
               list="sections"
               path={`sections.${key}`}
             >
-              <h2 className="font-semibold text-[#0d1117] text-[13px]">
+              <h2 className="text-[13px] font-semibold text-[#0d1117]">
                 <span className="text-[var(--cv-accent)]">## </span>
                 <E placeholder={m.cv_ph_section()} {...sectionLabel(cv, key)} />
               </h2>

@@ -10,9 +10,9 @@ import {
   ilike,
   isNotNull,
   or,
-  type SQL,
   sql,
 } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "#/db";
@@ -34,14 +34,13 @@ import { m } from "#/paraglide/messages.js";
 const PAGE = 50;
 const DAY = 24 * 60 * 60 * 1000;
 
-/** Every admin server function starts here. */
-async function requireAdmin() {
+const requireAdmin = async () => {
   const admin = await adminFromHeaders(getRequestHeaders());
   if (!admin) {
     throw new Error(m.admin_forbidden());
   }
   return admin;
-}
+};
 
 const num = (v: unknown) => Number(v ?? 0) || 0;
 const iso = (d: Date | string | null | undefined) =>
@@ -54,6 +53,77 @@ export const getAdminAccess = createServerFn({ method: "GET" }).handler(
     return admin ? { email: admin.email } : null;
   }
 );
+
+/** 30 days of AI cost per kind and signups, oldest first, gaps filled with 0. */
+const dailySeries = (
+  now: number,
+  daily: { day: string; kind: string; cost: unknown; requests: unknown }[],
+  signups: { day: string; guests: unknown; registered: unknown }[]
+) => {
+  const days: {
+    day: string;
+    chat: number;
+    translate: number;
+    faq: number;
+    requests: number;
+    guests: number;
+    registered: number;
+  }[] = [];
+  for (let i = 29; i >= 0; i -= 1) {
+    const d = new Date(now - i * DAY).toISOString().slice(0, 10);
+    days.push({
+      day: d,
+      chat: 0,
+      translate: 0,
+      faq: 0,
+      requests: 0,
+      guests: 0,
+      registered: 0,
+    });
+  }
+  const byDay = new Map(days.map((d) => [d.day, d]));
+  for (const row of daily) {
+    const d = byDay.get(row.day);
+    if (d) {
+      const k = row.kind as "chat" | "translate" | "faq";
+      if (k in d) {
+        d[k] += num(row.cost);
+      }
+      d.requests += num(row.requests);
+    }
+  }
+  for (const row of signups) {
+    const d = byDay.get(row.day);
+    if (d) {
+      d.guests = num(row.guests);
+      d.registered = num(row.registered);
+    }
+  }
+  return days;
+};
+
+type AiTotalsRow = Record<
+  | "chats"
+  | "chats7"
+  | "errors7"
+  | "costToday"
+  | "cost7"
+  | "cost30"
+  | "costAll"
+  | "searches30",
+  unknown
+>;
+
+const aiTotals = (ai: AiTotalsRow | undefined) => ({
+  chats: num(ai?.chats),
+  chats7: num(ai?.chats7),
+  errors7: num(ai?.errors7),
+  costToday: num(ai?.costToday),
+  cost7: num(ai?.cost7),
+  cost30: num(ai?.cost30),
+  costAll: num(ai?.costAll),
+  searches30: num(ai?.searches30),
+});
 
 /** Numbers for the overview: people, CVs, AI spend, and 30 days of cost. */
 export const getAdminOverview = createServerFn({ method: "GET" }).handler(
@@ -128,45 +198,7 @@ export const getAdminOverview = createServerFn({ method: "GET" }).handler(
       .where(gte(userTable.createdAt, d30))
       .groupBy(signupDay);
 
-    const days: {
-      day: string;
-      chat: number;
-      translate: number;
-      faq: number;
-      requests: number;
-      guests: number;
-      registered: number;
-    }[] = [];
-    for (let i = 29; i >= 0; i -= 1) {
-      const d = new Date(now - i * DAY).toISOString().slice(0, 10);
-      days.push({
-        day: d,
-        chat: 0,
-        translate: 0,
-        faq: 0,
-        requests: 0,
-        guests: 0,
-        registered: 0,
-      });
-    }
-    const byDay = new Map(days.map((d) => [d.day, d]));
-    for (const row of daily) {
-      const d = byDay.get(row.day);
-      if (d) {
-        const k = row.kind as "chat" | "translate" | "faq";
-        if (k in d) {
-          d[k] += num(row.cost);
-        }
-        d.requests += num(row.requests);
-      }
-    }
-    for (const row of signups) {
-      const d = byDay.get(row.day);
-      if (d) {
-        d.guests = num(row.guests);
-        d.registered = num(row.registered);
-      }
-    }
+    const days = dailySeries(now, daily, signups);
 
     const topSpenders = await db
       .select({
@@ -205,16 +237,7 @@ export const getAdminOverview = createServerFn({ method: "GET" }).handler(
         shared: num(cvs?.shared),
       },
       files: { total: num(files?.total), bytes: num(files?.bytes) },
-      ai: {
-        chats: num(ai?.chats),
-        chats7: num(ai?.chats7),
-        errors7: num(ai?.errors7),
-        costToday: num(ai?.costToday),
-        cost7: num(ai?.cost7),
-        cost30: num(ai?.cost30),
-        costAll: num(ai?.costAll),
-        searches30: num(ai?.searches30),
-      },
+      ai: aiTotals(ai),
       days,
       topSpenders: topSpenders.map((t) => ({
         userId: t.userId,
@@ -378,6 +401,7 @@ export const getAdminUser = createServerFn({ method: "GET" })
       })
       .from(aiUsage)
       .where(eq(aiUsage.userId, u.id));
+    const admins = await adminEmails();
     return {
       user: {
         id: u.id,
@@ -394,7 +418,7 @@ export const getAdminUser = createServerFn({ method: "GET" })
         lastSeen: iso(sessions[0]?.updatedAt),
         userAgent: sessions[0]?.userAgent ?? null,
         providers: providers.map((p) => p.providerId),
-        isAdmin: (await adminEmails()).includes(u.email.toLowerCase()),
+        isAdmin: admins.includes(u.email.toLowerCase()),
       },
       cvs: cvs.map((c) => ({
         id: c.id,
@@ -723,13 +747,13 @@ export const getAdminUsage = createServerFn({ method: "GET" })
     };
   });
 
-async function memberById(id: string) {
+const memberById = async (id: string) => {
   const [u] = await db.select().from(userTable).where(eq(userTable.id, id));
   if (!u || u.isAnonymous) {
     throw new Error(m.admin_verify_guest());
   }
   return u;
-}
+};
 
 /**
  * Emails the user a confirmation link (in the admin's language). Also works

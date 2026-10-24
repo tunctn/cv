@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { E, Sel } from "#/components/cv/editing";
 import { m } from "#/paraglide/messages.js";
+
 import type { Block, TemplateDef } from "../engine";
 import type { CV } from "../schema";
 import {
@@ -17,17 +18,12 @@ import {
   Description,
   EntryDates,
   EntryLocation,
-  type EntryModel,
   EntryText,
   sectionStream,
 } from "./parts";
+import type { EntryModel } from "./parts";
 
-/**
- * Three columns: dates, the spine, content. Every block draws its own piece
- * of the spine and spaces itself with bottom padding, so the line never
- * breaks between blocks.
- */
-function Track({
+const Track = ({
   margin,
   dot,
   children,
@@ -37,69 +33,65 @@ function Track({
   dot?: "entry" | "section";
   children: ReactNode;
   className?: string;
-}) {
-  return (
-    <div className={`grid grid-cols-[96px_28px_1fr] ${className ?? ""}`}>
-      <div className="pt-[2px] pr-1 text-right text-[#7a7a7a] text-[11px] tabular-nums leading-[1.45]">
-        {margin}
-      </div>
-      <div className="relative">
-        <span className="absolute top-0 bottom-0 left-[13px] w-[2px] bg-[color-mix(in_srgb,var(--cv-accent)_22%,white)]" />
-        {dot === "entry" ? (
-          <span className="absolute top-[5px] left-[9px] h-[10px] w-[10px] rounded-full border-2 border-[var(--cv-accent)] bg-white" />
-        ) : null}
-        {dot === "section" ? (
-          <span className="absolute top-[6px] left-[6px] h-[16px] w-[16px] rounded-full bg-[var(--cv-accent)]" />
-        ) : null}
-      </div>
-      <div className="min-w-0">{children}</div>
+}) => (
+  <div className={`grid grid-cols-[96px_28px_1fr] ${className ?? ""}`}>
+    <div className="pt-[2px] pr-1 text-right text-[11px] leading-[1.45] text-[#7a7a7a] tabular-nums">
+      {margin}
     </div>
-  );
-}
+    <div className="relative">
+      <span className="absolute top-0 bottom-0 left-[13px] w-[2px] bg-[color-mix(in_srgb,var(--cv-accent)_22%,white)]" />
+      {dot === "entry" ? (
+        <span className="absolute top-[5px] left-[9px] h-[10px] w-[10px] rounded-full border-2 border-[var(--cv-accent)] bg-white" />
+      ) : null}
+      {dot === "section" ? (
+        <span className="absolute top-[6px] left-[6px] h-[16px] w-[16px] rounded-full bg-[var(--cv-accent)]" />
+      ) : null}
+    </div>
+    <div className="min-w-0">{children}</div>
+  </div>
+);
 
-function entry(e: EntryModel): Block {
-  return {
-    key: e.id,
-    node: (
-      <Sel label={e.label} list={e.list} path={e.p}>
-        <Track
-          className="pb-[16px]"
-          dot="entry"
-          margin={<EntryDates e={e} separator=" – " />}
-        >
-          <p className="font-semibold text-[#151515] text-[13.4px]">
-            <EntryText e={e} which="title" />
-          </p>
-          <p className="text-[12px]">
-            <EntryText
-              className="font-medium text-[var(--cv-accent)]"
-              e={e}
-              which="sub"
-            />
-            <EntryLocation
-              before={e.sub?.value ? ", " : null}
-              className="text-[#888]"
-              e={e}
-            />
-          </p>
-          <Description
-            className="mt-1 text-[#333]"
-            p={e.p}
-            value={e.description}
+const entry = (e: EntryModel): Block => ({
+  key: e.id,
+  node: (
+    <Sel label={e.label} list={e.list} path={e.p}>
+      <Track
+        className="pb-[16px]"
+        dot="entry"
+        margin={<EntryDates e={e} separator=" – " />}
+      >
+        <p className="text-[13.4px] font-semibold text-[#151515]">
+          <EntryText e={e} which="title" />
+        </p>
+        <p className="text-[12px]">
+          <EntryText
+            className="font-medium text-[var(--cv-accent)]"
+            e={e}
+            which="sub"
           />
-          <Bullets
-            className="mt-1 list-disc space-y-[2px] pl-4 marker:text-[var(--cv-accent)]"
-            items={e.highlights ?? []}
-            list={`${e.p}.highlights`}
+          <EntryLocation
+            before={e.sub?.value ? ", " : null}
+            className="text-[#888]"
+            e={e}
           />
-        </Track>
-      </Sel>
-    ),
-  };
-}
+        </p>
+        <Description
+          className="mt-1 text-[#333]"
+          p={e.p}
+          value={e.description}
+        />
+        <Bullets
+          className="mt-1 list-disc space-y-[2px] pl-4 marker:text-[var(--cv-accent)]"
+          items={e.highlights ?? []}
+          list={`${e.p}.highlights`}
+        />
+      </Track>
+    </Sel>
+  ),
+});
 
-function skills(cv: CV): Block[] {
-  return cv.skills.map((s, i) => {
+const skills = (cv: CV): Block[] =>
+  cv.skills.map((s, i) => {
     const p = `skills.${i}`;
     return {
       key: s.id,
@@ -132,10 +124,9 @@ function skills(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function languages(cv: CV): Block[] {
-  return cv.languages.map((l, i) => {
+const languages = (cv: CV): Block[] =>
+  cv.languages.map((l, i) => {
     const p = `languages.${i}`;
     return {
       key: l.id,
@@ -163,7 +154,6 @@ function languages(cv: CV): Block[] {
       ),
     };
   });
-}
 
 /** A vertical spine runs down the page; dates sit to its left, entries to its right. */
 export const timeline: TemplateDef = {
@@ -197,7 +187,7 @@ export const timeline: TemplateDef = {
               width={84}
             />
             <div className="min-w-0">
-              <h1 className="font-bold text-[#111] text-[32px] leading-[1.1] tracking-[-0.025em]">
+              <h1 className="text-[32px] leading-[1.1] font-bold tracking-[-0.025em] text-[#111]">
                 <E
                   path="basics.name"
                   placeholder={m.cv_ph_your_name()}
@@ -205,7 +195,7 @@ export const timeline: TemplateDef = {
                 />
               </h1>
               <Show path="basics" value={b.headline}>
-                <p className="mt-1 font-medium text-[14.5px] text-[var(--cv-accent)]">
+                <p className="mt-1 text-[14.5px] font-medium text-[var(--cv-accent)]">
                   <E
                     path="basics.headline"
                     placeholder={m.cv_ph_headline()}
@@ -214,7 +204,7 @@ export const timeline: TemplateDef = {
                 </p>
               </Show>
               <Contacts
-                className="mt-2 flex flex-wrap gap-x-4 text-[#666] text-[11.6px]"
+                className="mt-2 flex flex-wrap gap-x-4 text-[11.6px] text-[#666]"
                 cv={cv}
               />
             </div>
@@ -228,7 +218,7 @@ export const timeline: TemplateDef = {
         node: (
           <Sel label={m.cv_sel_profile()} path="basics.summary">
             <Track className="pb-[22px]">
-              <p className="text-[#333] text-[13px]">
+              <p className="text-[13px] text-[#333]">
                 <E
                   multiline
                   path="basics.summary"
@@ -254,7 +244,7 @@ export const timeline: TemplateDef = {
               path={`sections.${key}`}
             >
               <Track className="pt-[6px] pb-[12px]" dot="section">
-                <h2 className="font-bold text-[16px] text-[var(--cv-accent)] uppercase tracking-[0.06em]">
+                <h2 className="text-[16px] font-bold tracking-[0.06em] text-[var(--cv-accent)] uppercase">
                   <E
                     placeholder={m.cv_ph_section()}
                     {...sectionLabel(cv, key)}

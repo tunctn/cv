@@ -1,5 +1,10 @@
 import { Download01Icon } from "@hugeicons-pro/core-stroke-rounded";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+  getRouteApi,
+} from "@tanstack/react-router";
 import { useCallback } from "react";
 import { z } from "zod";
 
@@ -18,21 +23,16 @@ import { Icon } from "#/components/icon";
 import { listAdminFiles } from "#/lib/admin/functions";
 import { m } from "#/paraglide/messages.js";
 
+const routeApi = getRouteApi("/admin/files");
+
 const search = z.object({
   q: z.string().optional(),
   page: z.number().int().min(0).optional(),
 });
 
-export const Route = createFileRoute("/admin/files")({
-  validateSearch: search,
-  loaderDeps: ({ search: s }) => s,
-  loader: ({ deps }) => listAdminFiles({ data: deps }),
-  component: Files,
-});
-
-function Files() {
-  const data = Route.useLoaderData();
-  const s = Route.useSearch();
+const Files = () => {
+  const data = routeApi.useLoaderData();
+  const s = routeApi.useSearch();
   const navigate = useNavigate({ from: "/admin/files" });
   const onQuery = useCallback(
     (q: string) => navigate({ search: { q: q || undefined, page: undefined } }),
@@ -73,7 +73,7 @@ function Files() {
                 <span className="block max-w-[280px] truncate font-medium">
                   {f.name}
                 </span>
-                <span className="block text-[12px] text-muted-foreground">
+                <span className="text-muted-foreground block text-[12px]">
                   {f.mediaType}
                 </span>
               </Td>
@@ -100,7 +100,7 @@ function Files() {
               <Td className="text-end">
                 <a
                   aria-label={m.admin_download()}
-                  className="inline-flex rounded-full p-1.5 text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground"
+                  className="text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground inline-flex rounded-full p-1.5"
                   href={`/api/admin/files/${f.id}`}
                 >
                   <Icon className="size-4" icon={Download01Icon} />
@@ -118,4 +118,11 @@ function Files() {
       </Panel>
     </>
   );
-}
+};
+
+export const Route = createFileRoute("/admin/files")({
+  validateSearch: search,
+  loaderDeps: ({ search: s }) => s,
+  loader: ({ deps }) => listAdminFiles({ data: deps }),
+  component: Files,
+});

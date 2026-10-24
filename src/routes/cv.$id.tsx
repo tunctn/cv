@@ -16,20 +16,33 @@ import {
   Link,
   notFound,
   redirect,
+  getRouteApi,
 } from "@tanstack/react-router";
 import type { FileUIPart, UIMessage } from "ai";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import type { RefObject } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+
 import { Canvas } from "#/components/editor/canvas";
-import { type ChatContext, ChatPanel } from "#/components/editor/chat";
+import { ChatPanel } from "#/components/editor/chat";
+import type { ChatContext } from "#/components/editor/chat";
 import { ChatDock, DOCK_GAP, useDock } from "#/components/editor/chat-dock";
 import type { ClipResult } from "#/components/editor/clip";
 import { HistoryPanel } from "#/components/editor/history-panel";
-import { ShareDialog, type ShareState } from "#/components/editor/share-dialog";
+import { ShareDialog } from "#/components/editor/share-dialog";
+import type { ShareState } from "#/components/editor/share-dialog";
 import { StyleBar } from "#/components/editor/style-bar";
-import { type Doc, useHistory } from "#/components/editor/use-history";
-import { Icon, type IconSvgElement } from "#/components/icon";
+import { useHistory } from "#/components/editor/use-history";
+import type { Doc } from "#/components/editor/use-history";
+import { Icon } from "#/components/icon";
+import type { IconSvgElement } from "#/components/icon";
 import { AccountArea } from "#/components/site-header";
 import { Button } from "#/components/ui/button";
 import {
@@ -45,9 +58,12 @@ import {
 } from "#/components/ui/tooltip";
 import type { PageBreaks } from "#/lib/cv/engine";
 import { getCv, getViewer, updateCv } from "#/lib/cv/functions";
-import { type Path, removeAt, splitIndex } from "#/lib/cv/paths";
-import { type CV, newId } from "#/lib/cv/schema";
-import { getTemplate, type TemplateId } from "#/lib/cv/templates";
+import { removeAt, splitIndex } from "#/lib/cv/paths";
+import type { Path } from "#/lib/cv/paths";
+import { newId } from "#/lib/cv/schema";
+import type { CV } from "#/lib/cv/schema";
+import { getTemplate } from "#/lib/cv/templates";
+import type { TemplateId } from "#/lib/cv/templates";
 import { listVersions } from "#/lib/cv/versions";
 import { getDockPrefs } from "#/lib/dock-prefs";
 import { ENGLISH_NAMES } from "#/lib/i18n";
@@ -57,77 +73,254 @@ import { m } from "#/paraglide/messages.js";
 import type { Locale } from "#/paraglide/runtime.js";
 import { getLocale } from "#/paraglide/runtime.js";
 
-/** Only our own stored files can be handed to the editor to import. */
-const IMPORT_URL = /^\/api\/files\/[\w-]+(\?size=\d+)?$/;
+const routeApi = getRouteApi("/cv/$id");
 
-export const Route = createFileRoute("/cv/$id")({
-  /** `import` (+ name, type): a file just uploaded from "Import a CV", sent to the AI once. */
-  validateSearch: z.object({
-    import: z.string().regex(IMPORT_URL).optional().catch(undefined),
-    name: z.string().max(200).optional().catch(undefined),
-    type: z.string().max(100).optional().catch(undefined),
-  }),
-  loader: async ({ params }) => {
-    const viewer = await getViewer();
-    if (!viewer) {
-      throw redirect({ to: "/" });
-    }
-    const [cv, dock] = await Promise.all([
-      getCv({ data: { id: params.id } }),
-      getDockPrefs(),
-    ]);
-    if (!cv) {
-      throw notFound();
-    }
-    const history = await listVersions({ data: { cvId: params.id } });
-    return { viewer, cv, dock, history };
-  },
-  head: ({ loaderData }) => ({
-    meta: [
-      { title: m.ed_meta_title({ title: loaderData?.cv.title ?? m.ed_cv() }) },
-    ],
-  }),
-  component: Editor,
-});
+/** Only our own stored files can be handed to the editor to import. */
+const IMPORT_URL = /^\/api\/files\/[\w-]+(?:\?size=\d+)?$/u;
 
 type SaveState = "saved" | "saving" | "dirty" | "error";
+
 type Panel = "chat" | "cv";
 
-const FILE_UNSAFE = /[\\/:*?"<>|]+/g;
+const FILE_UNSAFE = /[\\/:*?"<>|]+/gu;
 
-/** Form controls with their own native undo (CV fields use the editor's). */
-function isFormControl(target: EventTarget | null) {
+const isFormControl = (target: EventTarget | null) => {
   const el = target as HTMLElement | null;
   return Boolean(
     el &&
-      (el.tagName === "INPUT" ||
-        el.tagName === "TEXTAREA" ||
-        el.tagName === "SELECT")
+    (el.tagName === "INPUT" ||
+      el.tagName === "TEXTAREA" ||
+      el.tagName === "SELECT")
   );
-}
+};
 
-function isCvField(target: EventTarget | null) {
-  return Boolean((target as HTMLElement | null)?.isContentEditable);
-}
+const isCvField = (target: EventTarget | null) =>
+  Boolean((target as HTMLElement | null)?.isContentEditable);
 
-function Editor() {
+const MobileSwitch = ({
+  panel,
+  onChange,
+  className,
+}: {
+  panel: "chat" | "cv";
+  onChange: (panel: "chat" | "cv") => void;
+  className?: string;
+}) => {
+  const chat = useCallback(() => onChange("chat"), [onChange]);
+  const cv = useCallback(() => onChange("cv"), [onChange]);
+  return (
+    <div
+      aria-label={m.ed_show()}
+      className={cn(
+        "bg-surface flex h-9 shrink-0 rounded-full p-0.5",
+        className
+      )}
+      role="tablist"
+    >
+      {(
+        [
+          ["chat", m.ed_chat(), chat],
+          ["cv", m.ed_cv(), cv],
+        ] as const
+      ).map(([id, label, pick]) => (
+        <button
+          aria-selected={panel === id}
+          className={cn(
+            "h-8 cursor-pointer rounded-full px-3.5 text-[13px] font-medium transition-colors",
+            panel === id
+              ? "bg-background ring-foreground/[0.06] shadow-[0_1px_2px_rgb(0_0_0/0.08)] ring-1"
+              : "text-muted-foreground"
+          )}
+          key={id}
+          onClick={pick}
+          role="tab"
+          type="button"
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+const Kbd = ({ children }: { children: string }) => (
+  <span className="ml-1.5 opacity-60">{children}</span>
+);
+
+const HeaderButton = ({
+  icon,
+  label,
+  shortcut,
+  onClick,
+  disabled,
+}: {
+  icon: IconSvgElement;
+  label: string;
+  shortcut?: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) => (
+  <Tooltip>
+    <TooltipTrigger
+      render={
+        <Button
+          aria-label={label}
+          disabled={disabled}
+          onClick={onClick}
+          size="icon"
+          variant="ghost"
+        />
+      }
+    >
+      <Icon icon={icon} />
+    </TooltipTrigger>
+    <TooltipContent>
+      {label}
+      {shortcut ? <Kbd>{shortcut}</Kbd> : null}
+    </TooltipContent>
+  </Tooltip>
+);
+
+const SAVE_ICONS = {
+  saved: CloudSavingDone01Icon,
+  busy: CloudUploadIcon,
+  error: CloudOffIcon,
+};
+
+const TIME_OPTIONS: Intl.DateTimeFormatOptions = {
+  hour: "numeric",
+  minute: "2-digit",
+};
+
+const SaveIndicator = ({
+  state,
+  savedAt,
+  onRetry,
+}: {
+  state: SaveState;
+  savedAt: number | null;
+  onRetry: () => void;
+}) => {
+  const busy = state === "saving" || state === "dirty";
+  let label = savedAt
+    ? m.ed_all_saved_at({
+        time: new Date(savedAt).toLocaleTimeString(getLocale(), TIME_OPTIONS),
+      })
+    : m.ed_all_saved();
+  if (busy) {
+    label = m.ed_saving();
+  } else if (state === "error") {
+    label = m.ed_save_failed();
+  }
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <button
+            aria-label={label}
+            aria-live="polite"
+            className={cn(
+              "relative grid size-8 shrink-0 place-items-center rounded-full transition-colors",
+              state === "error"
+                ? "text-destructive hover:bg-destructive/10"
+                : "text-muted-foreground/70 pointer-events-auto cursor-default"
+            )}
+            onClick={state === "error" ? onRetry : undefined}
+            type="button"
+          />
+        }
+      >
+        {(["saved", "busy", "error"] as const).map((k) => (
+          <Icon
+            aria-hidden
+            className={cn(
+              "col-start-1 row-start-1 size-[18px] transition-[opacity,transform] duration-200 ease-out",
+              (k === "busy" ? busy : state === k)
+                ? "scale-100 opacity-100"
+                : "scale-90 opacity-0"
+            )}
+            icon={SAVE_ICONS[k]}
+            key={k}
+          />
+        ))}
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+};
+
+const languageName = (target: Locale) => {
+  const ui = getLocale();
+  const name = new Intl.DisplayNames([ui], { type: "language" }).of(target);
+  return name
+    ? name.charAt(0).toLocaleUpperCase(ui) + name.slice(1)
+    : ENGLISH_NAMES[target];
+};
+
+const wait = (ms: number) =>
+  // oxlint-disable-next-line promise/avoid-new -- setTimeout has no promise form in the browser
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
+/** Exports the CV as a file download; toasts on failure. Never throws. */
+const exportCv = async ({
+  format,
+  id,
+  title,
+  flush,
+  breaks,
+}: {
+  format: "pdf" | "png";
+  id: string;
+  title: string;
+  flush: () => Promise<void>;
+  breaks: RefObject<PageBreaks | null>;
+}) => {
+  try {
+    // Lets the editor re-render and lay out pages without the selection.
+    await wait(120);
+    await flush();
+    const params = new URLSearchParams({ format });
+    if (breaks.current) {
+      params.set("breaks", JSON.stringify(breaks.current));
+    }
+    const res = await fetch(`/api/export/${id}?${params}`);
+    if (!res.ok) {
+      throw new Error(m.ed_export_failed({ status: res.status }));
+    }
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${(title.trim() || m.ed_cv()).replaceAll(FILE_UNSAFE, "")}.${format}`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    track("export", { format });
+  } catch (error) {
+    track("export", { format, ok: false });
+    toast.error((error as Error).message);
+  }
+};
+
+const Editor = () => {
   const {
     viewer,
     cv: initial,
     dock: loaderDock,
     history: stored,
-  } = Route.useLoaderData();
+  } = routeApi.useLoaderData();
   const history = useHistory(
     initial.id,
     { cv: initial.data, template: initial.template as TemplateId },
     stored.versions,
     stored.more
   );
-  const { doc, commit, undo, redo } = history;
+  const { doc, commit, undo, redo, jump, loadOlder } = history;
   const def = getTemplate(doc.template);
   const [title, setTitle] = useState(initial.title);
   const [panel, setPanel] = useState<Panel>("cv");
   const dock = useDock(loaderDock);
+  const updateDock = dock.update;
   const area = useRef<HTMLDivElement>(null);
   // Space the floating chat card covers, so the canvas centres in what's left.
   const reserve = {
@@ -166,7 +359,9 @@ function Editor() {
     },
     [initial.id]
   );
-  latest.current = { doc, title };
+  useLayoutEffect(() => {
+    latest.current = { doc, title };
+  }, [doc, title]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previous = useRef({ doc, title });
 
@@ -253,16 +448,16 @@ function Editor() {
     redo();
   }, [redo]);
   const jumpTo = useCallback(
-    (...args: Parameters<typeof history.jump>) => {
+    (...args: Parameters<typeof jump>) => {
       track("history_jump");
-      return history.jump(...args);
+      return jump(...args);
     },
-    [history.jump]
+    [jump]
   );
 
   // Keyboard: undo/redo, delete the selected item, Esc to deselect.
   useEffect(() => {
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: a flat key map
+    // oxlint-disable-next-line complexity -- a flat key map
     const onKey = (e: KeyboardEvent) => {
       if (isFormControl(e.target)) {
         return;
@@ -320,33 +515,17 @@ function Editor() {
   const download = useCallback(
     async (format: "pdf" | "png") => {
       setExporting(format);
-      try {
-        // Page breaks are taken from the editor, without the selection's
-        // temporary empty-field placeholders.
-        setSelected(null);
-        await new Promise((r) => setTimeout(r, 120));
-        await flush();
-        const params = new URLSearchParams({ format });
-        if (breaksRef.current) {
-          params.set("breaks", JSON.stringify(breaksRef.current));
-        }
-        const res = await fetch(`/api/export/${initial.id}?${params}`);
-        if (!res.ok) {
-          throw new Error(m.ed_export_failed({ status: res.status }));
-        }
-        const blob = await res.blob();
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = `${(title.trim() || m.ed_cv()).replace(FILE_UNSAFE, "")}.${format}`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-        track("export", { format });
-      } catch (e) {
-        track("export", { format, ok: false });
-        toast.error((e as Error).message);
-      } finally {
-        setExporting(null);
-      }
+      // Page breaks are taken from the editor, without the selection's
+      // temporary empty-field placeholders.
+      setSelected(null);
+      await exportCv({
+        format,
+        id: initial.id,
+        title,
+        flush,
+        breaks: breaksRef,
+      });
+      setExporting(null);
     },
     [flush, initial.id, title]
   );
@@ -366,7 +545,7 @@ function Editor() {
   // Everything the AI changes during one reply is one step in the history.
   const aiTurn = useRef<{ id: string; label: string }>({ id: "", label: "" });
   const onAiTurn = useCallback((prompt: string) => {
-    const words = prompt.trim().replace(/\s+/g, " ");
+    const words = prompt.trim().replaceAll(/\s+/gu, " ");
     aiTurn.current = {
       id: newId(),
       // The history panel marks AI versions with an icon and quotes the ask.
@@ -397,27 +576,33 @@ function Editor() {
   } | null>(null);
   // Arrived from "Import a CV": send the file to the AI once, then drop the
   // search params so a reload doesn't send it again.
-  const search = Route.useSearch();
-  const navigate = Route.useNavigate();
-  useEffect(() => {
-    if (!search.import) {
-      return;
+  const search = routeApi.useSearch();
+  const navigate = routeApi.useNavigate();
+  // Adjusted while rendering (not in an effect), once per new import.
+  const [seenImport, setSeenImport] = useState<string>();
+  if (search.import !== seenImport) {
+    setSeenImport(search.import);
+    if (search.import) {
+      setPendingPrompt({
+        id: `import:${search.import}`,
+        text: m.chat_start_import_prompt(),
+        files: [
+          {
+            type: "file",
+            url: search.import,
+            filename: search.name || "CV",
+            mediaType: search.type || "application/pdf",
+          },
+        ],
+      });
+      setPanel("chat");
     }
-    setPendingPrompt({
-      id: `import:${search.import}`,
-      text: m.chat_start_import_prompt(),
-      files: [
-        {
-          type: "file",
-          url: search.import,
-          filename: search.name || "CV",
-          mediaType: search.type || "application/pdf",
-        },
-      ],
-    });
-    setPanel("chat");
-    navigate({ search: {}, replace: true });
-  }, [search.import, search.name, search.type, navigate]);
+  }
+  useEffect(() => {
+    if (search.import) {
+      navigate({ search: {}, replace: true });
+    }
+  }, [search.import, navigate]);
   const onAsk = useCallback(
     (path: Path, label: string, text: string, prompt?: string) => {
       addContext({ label, fields: [{ path, text }] });
@@ -475,7 +660,7 @@ function Editor() {
         <SaveIndicator onRetry={flush} savedAt={savedAt} state={save} />
         <input
           aria-label={m.ed_cv_name()}
-          className="h-9 w-full min-w-0 flex-1 rounded-lg bg-transparent px-2 font-medium text-[15px] outline-none hover:bg-surface focus:bg-surface sm:w-72 sm:flex-none"
+          className="hover:bg-surface focus:bg-surface h-9 w-full min-w-0 flex-1 rounded-lg bg-transparent px-2 text-[15px] font-medium outline-none sm:w-72 sm:flex-none"
           onChange={handleTitle}
           value={title}
         />
@@ -573,7 +758,7 @@ function Editor() {
           <ChatDock
             area={area}
             minimized={dock.minimized}
-            onUpdate={dock.update}
+            onUpdate={updateDock}
             side={dock.side}
             visible={panel === "chat"}
             width={dock.width}
@@ -589,7 +774,7 @@ function Editor() {
                   cursor={history.cursor}
                   hasOlder={history.hasOlder}
                   onJump={jumpTo}
-                  onLoadOlder={history.loadOlder}
+                  onLoadOlder={loadOlder}
                   versions={history.versions}
                 />
               }
@@ -635,172 +820,34 @@ function Editor() {
       />
     </div>
   );
-}
-
-/** Chat / CV switch for phones, where only one of them fits. */
-function MobileSwitch({
-  panel,
-  onChange,
-  className,
-}: {
-  panel: "chat" | "cv";
-  onChange: (panel: "chat" | "cv") => void;
-  className?: string;
-}) {
-  const chat = useCallback(() => onChange("chat"), [onChange]);
-  const cv = useCallback(() => onChange("cv"), [onChange]);
-  return (
-    <div
-      aria-label={m.ed_show()}
-      className={cn(
-        "flex h-9 shrink-0 rounded-full bg-surface p-0.5",
-        className
-      )}
-      role="tablist"
-    >
-      {(
-        [
-          ["chat", m.ed_chat(), chat],
-          ["cv", m.ed_cv(), cv],
-        ] as const
-      ).map(([id, label, pick]) => (
-        <button
-          aria-selected={panel === id}
-          className={cn(
-            "h-8 cursor-pointer rounded-full px-3.5 font-medium text-[13px] transition-colors",
-            panel === id
-              ? "bg-background shadow-[0_1px_2px_rgb(0_0_0/0.08)] ring-1 ring-foreground/[0.06]"
-              : "text-muted-foreground"
-          )}
-          key={id}
-          onClick={pick}
-          role="tab"
-          type="button"
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function HeaderButton({
-  icon,
-  label,
-  shortcut,
-  onClick,
-  disabled,
-}: {
-  icon: IconSvgElement;
-  label: string;
-  shortcut?: string;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <Button
-            aria-label={label}
-            disabled={disabled}
-            onClick={onClick}
-            size="icon"
-            variant="ghost"
-          />
-        }
-      >
-        <Icon icon={icon} />
-      </TooltipTrigger>
-      <TooltipContent>
-        {label}
-        {shortcut ? <Kbd>{shortcut}</Kbd> : null}
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
-function Kbd({ children }: { children: string }) {
-  return <span className="ml-1.5 opacity-60">{children}</span>;
-}
-
-const SAVE_ICONS = {
-  saved: CloudSavingDone01Icon,
-  busy: CloudUploadIcon,
-  error: CloudOffIcon,
 };
 
-const TIME_OPTIONS: Intl.DateTimeFormatOptions = {
-  hour: "numeric",
-  minute: "2-digit",
-};
-
-/**
- * A quiet cloud next to the title: a tick once everything is stored, an
- * arrow while saving, a warning (click to retry) if saving failed.
- */
-function SaveIndicator({
-  state,
-  savedAt,
-  onRetry,
-}: {
-  state: SaveState;
-  savedAt: number | null;
-  onRetry: () => void;
-}) {
-  const busy = state === "saving" || state === "dirty";
-  let label = savedAt
-    ? m.ed_all_saved_at({
-        time: new Date(savedAt).toLocaleTimeString(getLocale(), TIME_OPTIONS),
-      })
-    : m.ed_all_saved();
-  if (busy) {
-    label = m.ed_saving();
-  } else if (state === "error") {
-    label = m.ed_save_failed();
-  }
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <button
-            aria-label={label}
-            aria-live="polite"
-            className={cn(
-              "relative grid size-8 shrink-0 place-items-center rounded-full transition-colors",
-              state === "error"
-                ? "text-destructive hover:bg-destructive/10"
-                : "pointer-events-auto cursor-default text-muted-foreground/70"
-            )}
-            onClick={state === "error" ? onRetry : undefined}
-            type="button"
-          />
-        }
-      >
-        {(["saved", "busy", "error"] as const).map((k) => (
-          <Icon
-            aria-hidden
-            className={cn(
-              "col-start-1 row-start-1 size-[18px] transition-[opacity,transform] duration-200 ease-out",
-              (k === "busy" ? busy : state === k)
-                ? "scale-100 opacity-100"
-                : "scale-90 opacity-0"
-            )}
-            icon={SAVE_ICONS[k]}
-            key={k}
-          />
-        ))}
-      </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
-  );
-}
-
-/** A language's name in the app's language, e.g. "Türkçe" or "Turkish". */
-function languageName(target: Locale) {
-  const ui = getLocale();
-  const name = new Intl.DisplayNames([ui], { type: "language" }).of(target);
-  return name
-    ? name.charAt(0).toLocaleUpperCase(ui) + name.slice(1)
-    : ENGLISH_NAMES[target];
-}
+export const Route = createFileRoute("/cv/$id")({
+  /** `import` (+ name, type): a file just uploaded from "Import a CV", sent to the AI once. */
+  validateSearch: z.object({
+    import: z.string().regex(IMPORT_URL).optional().catch(undefined),
+    name: z.string().max(200).optional().catch(undefined),
+    type: z.string().max(100).optional().catch(undefined),
+  }),
+  loader: async ({ params }) => {
+    const viewer = await getViewer();
+    if (!viewer) {
+      throw redirect({ to: "/" });
+    }
+    const [cv, dock] = await Promise.all([
+      getCv({ data: { id: params.id } }),
+      getDockPrefs(),
+    ]);
+    if (!cv) {
+      throw notFound();
+    }
+    const history = await listVersions({ data: { cvId: params.id } });
+    return { viewer, cv, dock, history };
+  },
+  head: ({ loaderData }) => ({
+    meta: [
+      { title: m.ed_meta_title({ title: loaderData?.cv.title ?? m.ed_cv() }) },
+    ],
+  }),
+  component: Editor,
+});

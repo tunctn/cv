@@ -1,8 +1,6 @@
 import { BubbleChatSparkIcon } from "@hugeicons-pro/core-stroke-rounded";
 import {
   createContext,
-  type ReactNode,
-  type RefObject,
   useCallback,
   useContext,
   useLayoutEffect,
@@ -10,15 +8,11 @@ import {
   useRef,
   useState,
 } from "react";
-import { Icon } from "#/components/icon";
+import type { ReactNode, RefObject } from "react";
 
-import {
-  DOCK_COOKIE,
-  DOCK_MAX_W,
-  DOCK_MIN_W,
-  type DockPrefs,
-  type DockSide,
-} from "#/lib/dock-prefs";
+import { Icon } from "#/components/icon";
+import { DOCK_COOKIE, DOCK_MAX_W, DOCK_MIN_W } from "#/lib/dock-prefs";
+import type { DockPrefs, DockSide } from "#/lib/dock-prefs";
 import { cn } from "#/lib/utils";
 import { m } from "#/paraglide/messages.js";
 
@@ -27,19 +21,18 @@ const MAX_W = DOCK_MAX_W;
 /** Gap between the floating card and the edges of the work area. */
 export const DOCK_GAP = 12;
 
-/** Side and width of the chat card, saved in a cookie the server reads. */
-export function useDock(initial: DockPrefs) {
+export const useDock = (initial: DockPrefs) => {
   const [dock, setDock] = useState<DockPrefs>(initial);
   const update = useCallback((patch: Partial<DockPrefs>) => {
     setDock((d) => {
       const next = { ...d, ...patch };
-      // biome-ignore lint/suspicious/noDocumentCookie: a plain, non-sensitive UI preference cookie
+      // oxlint-disable-next-line unicorn/no-document-cookie -- a plain, non-sensitive UI preference cookie
       document.cookie = `${DOCK_COOKIE}=${encodeURIComponent(JSON.stringify(next))}; path=/; max-age=31536000; samesite=lax`;
       return next;
     });
   }, []);
   return { ...dock, update };
-}
+};
 
 interface DockHandle {
   dragging: boolean;
@@ -50,22 +43,14 @@ interface DockHandle {
     onPointerMove: (e: React.PointerEvent<HTMLElement>) => void;
     onPointerUp: () => void;
   };
-  minimize: () => void;
+  handleMinimize: () => void;
 }
 
 const DockContext = createContext<DockHandle | null>(null);
 
-/** Drag handlers and the minimise action of the surrounding chat card. */
-export function useDockHandle() {
-  return useContext(DockContext);
-}
+export const useDockHandle = () => useContext(DockContext);
 
-/**
- * The chat as a floating card over the work area (desktop). Grab its top bar
- * to move the whole card; let go and it glides to the nearest side. Drag the
- * inner edge to resize. On mobile it is a plain full-screen panel.
- */
-export function ChatDock({
+export const ChatDock = ({
   area,
   side,
   width,
@@ -83,13 +68,15 @@ export function ChatDock({
   /** Mobile: whether the chat tab is showing. Desktop always shows it. */
   visible: boolean;
   children: ReactNode;
-}) {
+}) => {
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [settling, setSettling] = useState(false);
   const drag = useRef<{ x: number; y: number } | null>(null);
   const resizeStart = useRef<{ x: number; w: number } | null>(null);
-  const pendingFlip = useRef<{ x: number; y: number } | null>(null);
+  const pendingFlip = useRef<{ x: number; y: number; side: DockSide } | null>(
+    null
+  );
 
   const restLeft = useCallback(
     (s: DockSide) => {
@@ -153,19 +140,23 @@ export function ChatDock({
       return;
     }
     // FLIP: after switching sides, start from where it was dropped and glide home.
-    pendingFlip.current = { x: visualLeft - restLeft(next), y: offset.y };
+    pendingFlip.current = {
+      x: visualLeft - restLeft(next),
+      y: offset.y,
+      side: next,
+    };
     onUpdate({ side: next });
   }, [area, offset, onUpdate, restLeft, side, width]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the docked side changes
   useLayoutEffect(() => {
     const flip = pendingFlip.current;
-    if (!flip) {
+    // Runs once the card has switched to the side it was dropped on.
+    if (flip?.side !== side) {
       return;
     }
     pendingFlip.current = null;
     setSettling(false);
-    setOffset(flip);
+    setOffset({ x: flip.x, y: flip.y });
     let inner = 0;
     const outer = requestAnimationFrame(() => {
       inner = requestAnimationFrame(() => {
@@ -208,7 +199,7 @@ export function ChatDock({
   const handle = useMemo<DockHandle>(
     () => ({
       dragging,
-      minimize,
+      handleMinimize: minimize,
       grab: {
         onPointerDown: onGrabDown,
         onPointerMove: onGrabMove,
@@ -223,8 +214,8 @@ export function ChatDock({
     <DockContext.Provider value={handle}>
       <aside
         className={cn(
-          "min-h-0 w-full flex-col bg-background",
-          "lg:absolute lg:top-3 lg:bottom-3 lg:z-30 lg:w-(--dock-w) lg:overflow-hidden lg:rounded-[24px] lg:ring-1 lg:ring-foreground/[0.07]",
+          "bg-background min-h-0 w-full flex-col",
+          "lg:ring-foreground/[0.07] lg:absolute lg:top-3 lg:bottom-3 lg:z-30 lg:w-(--dock-w) lg:overflow-hidden lg:rounded-[24px] lg:ring-1",
           side === "left"
             ? "lg:left-3 lg:origin-bottom-left"
             : "lg:right-3 lg:origin-bottom-right",
@@ -235,7 +226,7 @@ export function ChatDock({
           // Minimised: stays mounted (a reply keeps streaming), just hidden.
           minimized
             ? "lg:hidden"
-            : "lg:fade-in-0 lg:zoom-in-95 lg:flex lg:animate-in lg:duration-200 lg:ease-out"
+            : "lg:fade-in-0 lg:zoom-in-95 lg:animate-in lg:flex lg:duration-200 lg:ease-out"
         )}
         onTransitionEnd={onSettled}
         style={
@@ -267,7 +258,7 @@ export function ChatDock({
       {minimized ? (
         <button
           className={cn(
-            "absolute bottom-3 z-30 hidden h-11 cursor-pointer items-center gap-2 rounded-full bg-background pr-4 pl-3.5 font-medium text-[14px] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_40px_rgba(0,0,0,0.12)] ring-1 ring-foreground/[0.07] transition-transform duration-150 ease-out active:scale-[0.97] lg:flex",
+            "bg-background ring-foreground/[0.07] absolute bottom-3 z-30 hidden h-11 cursor-pointer items-center gap-2 rounded-full pr-4 pl-3.5 text-[14px] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_40px_rgba(0,0,0,0.12)] ring-1 transition-transform duration-150 ease-out active:scale-[0.97] lg:flex",
             "fade-in-0 zoom-in-90 animate-in duration-200",
             side === "left"
               ? "left-3 origin-bottom-left"
@@ -282,4 +273,4 @@ export function ChatDock({
       ) : null}
     </DockContext.Provider>
   );
-}
+};

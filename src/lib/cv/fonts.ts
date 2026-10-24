@@ -26,9 +26,8 @@ export const FONTS: FontOption[] = [
   },
 ];
 
-export function fontFamily(id: string) {
-  return (FONTS.find((f) => f.id === id) ?? FONTS[0]).family;
-}
+export const fontFamily = (id: string) =>
+  (FONTS.find((f) => f.id === id) ?? FONTS[0]).family;
 
 export const ACCENTS = [
   "#0a0a0a",

@@ -1,13 +1,8 @@
 import handler from "@tanstack/react-start/server-entry";
+
 import { paraglideMiddleware } from "#/paraglide/server.js";
 
-/**
- * Pages and data are per-visitor and change with every deploy, so nothing
- * the app renders may be cached by browsers or CDNs. Routes that set their
- * own Cache-Control (e.g. avatars, chat files) keep it; static assets are
- * served before this handler with their own long-lived headers.
- */
-function noStore(res: Response): Response {
+const noStore = (res: Response): Response => {
   if (res.headers.has("cache-control")) {
     return res;
   }
@@ -20,7 +15,7 @@ function noStore(res: Response): Response {
     copy.headers.set("cache-control", "private, no-store");
     return copy;
   }
-}
+};
 
 /**
  * Server entry: runs every request inside Paraglide's middleware so

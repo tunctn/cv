@@ -87,7 +87,7 @@ export interface TemplateDef {
   };
 }
 
-export function resolveStyle(def: TemplateDef, cv: CV): TemplateStyle {
+export const resolveStyle = (def: TemplateDef, cv: CV): TemplateStyle => {
   const s = cv.style ?? {};
   return {
     paper: s.paper ?? "a4",
@@ -107,14 +107,9 @@ export function resolveStyle(def: TemplateDef, cv: CV): TemplateStyle {
       s.headingScale ?? def.defaults.headingScale ?? TYPE_DEFAULTS.headingScale,
     headingWeight: s.headingWeight ?? def.defaults.headingWeight,
   };
-}
+};
 
-/**
- * Sheet attributes and CSS variables for the typography settings. Only
- * non-neutral settings are emitted, so a default CV renders exactly as the
- * template draws it. The rules live in styles.css (`[data-cv-lh]` etc.).
- */
-export function typeAttrs(style: TemplateStyle) {
+export const typeAttrs = (style: TemplateStyle) => {
   const attrs: Record<string, string> = {};
   const vars: Record<string, string> = {};
   if (style.lineHeight !== 1) {
@@ -134,7 +129,7 @@ export function typeAttrs(style: TemplateStyle) {
     vars["--cv-hw"] = String(style.headingWeight);
   }
   return { attrs, vars };
-}
+};
 
 /** Keys of the blocks that start pages 2, 3, … for each column. */
 export interface PageBreaks {
@@ -142,27 +137,21 @@ export interface PageBreaks {
   side: string[];
 }
 
-/**
- * Greedy page filling. `heights` are the measured block heights (without gaps).
- * With `forced`, pages break exactly before those block keys instead (used by
- * the PDF export so it matches the editor even if fonts measure a hair differently).
- * Returns block indexes per page.
- */
-export function paginate(
+export const paginate = (
   blocks: Block[],
   heights: number[],
   available: number,
   forced?: string[]
-): number[][] {
+): number[][] => {
   if (forced) {
     const starts = new Set(forced);
     const pages: number[][] = [[]];
-    blocks.forEach((b, i) => {
+    for (const [i, b] of blocks.entries()) {
       if (starts.has(b.key) && (pages.at(-1) as number[]).length > 0) {
         pages.push([]);
       }
       (pages.at(-1) as number[]).push(i);
-    });
+    }
     return pages;
   }
   const pages: number[][] = [[]];
@@ -184,21 +173,17 @@ export function paginate(
     used += gap + heights[i];
   }
   return pages;
-}
+};
 
-/** Height a page's blocks take up, gaps included. */
-export function usedHeight(
+export const usedHeight = (
   blocks: Block[],
   heights: number[],
   indexes: number[]
-) {
-  return indexes.reduce(
+) =>
+  indexes.reduce(
     (sum, i, n) => sum + (n === 0 ? 0 : (blocks[i].gap ?? 0)) + heights[i],
     0
   );
-}
 
-/** Block keys starting each page after the first. */
-export function breaksOf(blocks: Block[], pages: number[][]) {
-  return pages.slice(1).flatMap((p) => (p.length ? [blocks[p[0]].key] : []));
-}
+export const breaksOf = (blocks: Block[], pages: number[][]) =>
+  pages.slice(1).flatMap((p) => (p.length ? [blocks[p[0]].key] : []));

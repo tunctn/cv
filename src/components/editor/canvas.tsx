@@ -1,12 +1,14 @@
 import {
   DndContext,
-  type DragEndEvent,
-  type DragMoveEvent,
   DragOverlay,
-  type DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
+} from "@dnd-kit/core";
+import type {
+  DragEndEvent,
+  DragMoveEvent,
+  DragStartEvent,
 } from "@dnd-kit/core";
 import {
   Add01Icon,
@@ -14,19 +16,18 @@ import {
   MinusSignIcon,
 } from "@hugeicons-pro/core-stroke-rounded";
 import {
-  type ReactNode,
   useCallback,
   useEffect,
+  useEffectEvent,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
-import {
-  type DropTarget,
-  type EditorApi,
-  EditorContext,
-} from "#/components/cv/editing";
+import type { ReactNode } from "react";
+
+import { EditorContext } from "#/components/cv/editing";
+import type { DropTarget, EditorApi } from "#/components/cv/editing";
 import { PagedCv } from "#/components/cv/paged";
 import { Icon } from "#/components/icon";
 import { Button } from "#/components/ui/button";
@@ -35,13 +36,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "#/components/ui/tooltip";
-import {
-  PAPER_SIZES,
-  type PageBreaks,
-  resolveStyle,
-  type TemplateDef,
-} from "#/lib/cv/engine";
-import { getIn, moveIn, type Path, setIn, splitIndex } from "#/lib/cv/paths";
+import { PAPER_SIZES, resolveStyle } from "#/lib/cv/engine";
+import type { PageBreaks, TemplateDef } from "#/lib/cv/engine";
+import { getIn, moveIn, setIn, splitIndex } from "#/lib/cv/paths";
+import type { Path } from "#/lib/cv/paths";
 import type { CV, OrderKey } from "#/lib/cv/schema";
 import { LinksDisabled } from "#/lib/cv/templates/shared";
 import { textDirection } from "#/lib/i18n";
@@ -49,7 +47,8 @@ import { cn } from "#/lib/utils";
 import { m } from "#/paraglide/messages.js";
 import { getLocale } from "#/paraglide/runtime.js";
 
-import { ClipOverlay, type ClipResult } from "./clip";
+import { ClipOverlay } from "./clip";
+import type { ClipResult } from "./clip";
 import { SelectionToolbar } from "./selection-toolbar";
 
 export interface CanvasProps {
@@ -68,17 +67,86 @@ export interface CanvasProps {
 }
 
 const MIN_ZOOM = 0.3;
+
 const MAX_ZOOM = 1.6;
 
-function moveSection(cv: CV, from: OrderKey, to: OrderKey, after: boolean) {
+const moveSection = (cv: CV, from: OrderKey, to: OrderKey, after: boolean) => {
   const order = cv.sectionOrder.filter((k) => k !== from);
   const at = order.indexOf(to) + (after ? 1 : 0);
   order.splice(at, 0, from);
   return { ...cv, sectionOrder: order };
-}
+};
 
-/** Pages side by side, editable in place. */
-export function Canvas({
+const PREVIEW_W = 150;
+
+const PageButton = ({
+  index,
+  cv,
+  def,
+  onGo,
+}: {
+  index: number;
+  cv: CV;
+  def: TemplateDef;
+  onGo: (index: number) => void;
+}) => {
+  const go = useCallback(() => onGo(index), [index, onGo]);
+  const paper = PAPER_SIZES[resolveStyle(def, cv).paper];
+  const k = PREVIEW_W / paper.width;
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <button
+            aria-label={m.ed_go_to_page({ page: index + 1 })}
+            className="hover:bg-muted h-7 min-w-7 cursor-pointer rounded-full px-2 text-[12px] tabular-nums"
+            onClick={go}
+            type="button"
+          />
+        }
+      >
+        {index + 1}
+      </TooltipTrigger>
+      <TooltipContent
+        arrow={false}
+        className="bg-transparent p-0 shadow-none"
+        sideOffset={10}
+      >
+        <div
+          className="overflow-hidden rounded-[6px] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.08),0_16px_40px_rgba(0,0,0,0.16)] ring-1 ring-black/[0.06]"
+          style={{ width: PREVIEW_W, height: paper.height * k }}
+        >
+          <div
+            className="origin-top-left"
+            dir="ltr"
+            style={{ transform: `scale(${k})`, width: paper.width }}
+          >
+            <LinksDisabled.Provider value>
+              <PagedCv cv={cv} def={def} onlyPage={index} />
+            </LinksDisabled.Provider>
+          </div>
+        </div>
+      </TooltipContent>
+    </Tooltip>
+  );
+};
+
+const isBlankEntry = (value: unknown): boolean => {
+  if (typeof value === "string") {
+    return value.trim() === "";
+  }
+  if (Array.isArray(value)) {
+    return value.every(isBlankEntry);
+  }
+  if (value && typeof value === "object") {
+    return Object.entries(value).every(
+      ([k, v]) => k === "id" || k === "columns" || isBlankEntry(v)
+    );
+  }
+  return value === undefined || value === null;
+};
+
+export const Canvas = ({
   cv,
   def,
   onChange,
@@ -89,7 +157,7 @@ export function Canvas({
   onAsk,
   onBreaks,
   reserve,
-}: CanvasProps) {
+}: CanvasProps) => {
   const viewport = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const paper = PAPER_SIZES[resolveStyle(def, cv).paper];
@@ -102,9 +170,8 @@ export function Canvas({
 
   // Fit a whole page into the free room by default: its height, and on narrow
   // screens (phones) its width too, so page 1 is never cropped.
-  const fitReserve = useRef(reserve);
-  fitReserve.current = reserve;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refit when the card resizes too
+  const reserveSide = reserve?.side;
+  const reservePx = reserve?.px ?? 0;
   useEffect(() => {
     const el = viewport.current;
     if (!el) {
@@ -112,11 +179,12 @@ export function Canvas({
     }
     const ro = new ResizeObserver(([e]) => {
       const { width, height } = e.contentRect;
+      // Hidden mobile tab; refit once it shows.
       if (width === 0 || height === 0) {
-        return; // hidden mobile tab; refit once it shows
+        return;
       }
       const wide = window.matchMedia("(min-width: 1024px)").matches;
-      const room = width - (wide ? (fitReserve.current?.px ?? 0) : 0);
+      const room = width - (wide ? reservePx : 0);
       // The row has 24px padding; phones keep a 12px gutter each side.
       const byWidth = (room - (wide ? 48 : 24)) / paper.width;
       const byHeight = (height - 96) / paper.height;
@@ -124,7 +192,7 @@ export function Canvas({
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, [paper.height, paper.width, reserve?.px]);
+  }, [paper.height, paper.width, reservePx]);
 
   const set = useCallback(
     (path: Path, value: string) => onChange((c) => setIn(c, path, value)),
@@ -243,8 +311,6 @@ export function Canvas({
     px: number;
     py: number;
   } | null>(null);
-  const scaleRef = useRef(scale);
-  scaleRef.current = scale;
 
   const zoomFit = useCallback(() => {
     setZoom(null);
@@ -254,55 +320,45 @@ export function Canvas({
   // Centre the pages until the user moves the canvas themselves (and again on
   // "fit" or a paper/template change). Pages render after measuring, so this
   // follows the row's size rather than running once.
-  const userMoved = useRef(false);
-  const reserveRef = useRef(reserve);
-  reserveRef.current = reserve;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: recentre only on these triggers
+  const centerFor = `${centerKey}|${paper.width}|${def.id}|${reservePx}`;
+  const [movedFor, setMovedFor] = useState<string | null>(null);
+  const userMoved = movedFor === centerFor;
   useLayoutEffect(() => {
-    userMoved.current = false;
     const v = viewport.current;
     const c = content.current;
-    if (!(v && c)) {
+    if (userMoved || !(v && c)) {
       return;
     }
     const center = () => {
-      // biome-ignore lint/suspicious/noUnnecessaryConditions: the ref flips to true when the user pans, after this effect ran
-      if (!userMoved.current) {
-        const wide = window.matchMedia("(min-width: 1024px)").matches;
-        const left =
-          wide && reserveRef.current?.side === "left"
-            ? reserveRef.current.px
-            : 0;
-        const right =
-          wide && reserveRef.current?.side === "right"
-            ? reserveRef.current.px
-            : 0;
-        const room = v.clientWidth - left - right;
-        setPan({
-          x: left + Math.max(wide ? 24 : -12, (room - c.offsetWidth) / 2),
-          y: 8,
-        });
-      }
+      const wide = window.matchMedia("(min-width: 1024px)").matches;
+      const left = wide && reserveSide === "left" ? reservePx : 0;
+      const right = wide && reserveSide === "right" ? reservePx : 0;
+      const room = v.clientWidth - left - right;
+      setPan({
+        x: left + Math.max(wide ? 24 : -12, (room - c.offsetWidth) / 2),
+        y: 8,
+      });
     };
     center();
     const ro = new ResizeObserver(center);
     ro.observe(c);
     ro.observe(v);
     return () => ro.disconnect();
-  }, [centerKey, paper.width, def.id, reserve?.px]);
+  }, [userMoved, reserveSide, reservePx]);
 
   // When the chat card switches sides, glide the canvas into the space it
   // freed, in step with the card (same 340ms ease-out-expo). FLIP on one
   // composited layer: jump to the new pan, offset back, then animate to zero.
+  // While the pages are centred, the effect above already moved them.
   const world = useRef<HTMLDivElement>(null);
-  const glide = useRef<{ x: number; y: number } | null>(null);
+  const [glide, setGlide] = useState<{ x: number; y: number } | null>(null);
   const prevReserve = useRef(reserve);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: react only to the card switching sides
   useLayoutEffect(() => {
     const before = prevReserve.current;
-    prevReserve.current = reserve;
+    const now = reserveSide ? { side: reserveSide, px: reservePx } : undefined;
+    prevReserve.current = now;
     const v = viewport.current;
-    if (!(before && reserve && v) || before.side === reserve.side) {
+    if (!(before && now && v) || before.side === now.side) {
       return;
     }
     if (!window.matchMedia("(min-width: 1024px)").matches) {
@@ -313,24 +369,24 @@ export function Canvas({
       const right = r.side === "right" ? r.px : 0;
       return (left + v.clientWidth - right) / 2;
     };
-    const dx = centre(reserve) - centre(before);
-    glide.current = { x: dx, y: 0 };
-    setPan((p) => ({ ...p, x: p.x + dx }));
-  }, [reserve?.side, reserve?.px]);
+    const dx = centre(now) - centre(before);
+    setGlide({ x: dx, y: 0 });
+    if (userMoved) {
+      setPan((p) => ({ ...p, x: p.x + dx }));
+    }
+  }, [reserveSide, reservePx, userMoved]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: runs after each pan change to play a pending glide
+  // Plays a glide once the pan it belongs to is on screen.
   useLayoutEffect(() => {
-    const d = glide.current;
     const el = world.current;
-    if (!(d && el)) {
+    if (!(glide && el)) {
       return;
     }
-    glide.current = null;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       return;
     }
     el.style.transition = "none";
-    el.style.transform = `translate3d(${-d.x}px, ${-d.y}px, 0)`;
+    el.style.transform = `translate3d(${-glide.x}px, ${-glide.y}px, 0)`;
     el.getBoundingClientRect();
     const frame = requestAnimationFrame(() => {
       el.style.transition = "transform 340ms cubic-bezier(0.19, 1, 0.22, 1)";
@@ -342,37 +398,37 @@ export function Canvas({
     };
     el.addEventListener("transitionend", done, { once: true });
     return () => cancelAnimationFrame(frame);
-  }, [pan]);
+  }, [glide]);
 
+  const onWheel = useEffectEvent((e: WheelEvent, v: HTMLDivElement) => {
+    e.preventDefault();
+    setMovedFor(centerFor);
+    if (e.ctrlKey || e.metaKey) {
+      const rect = v.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+      const prev = scale;
+      // Mouse wheels send big steps, trackpad pinches small ones.
+      const speed = Math.abs(e.deltaY) > 40 ? 0.002 : 0.01;
+      const next = Math.min(
+        MAX_ZOOM,
+        Math.max(MIN_ZOOM, prev * Math.exp(-e.deltaY * speed))
+      );
+      const k = next / prev;
+      setZoom(next);
+      setPan((p) => ({ x: cx - (cx - p.x) * k, y: cy - (cy - p.y) * k }));
+      return;
+    }
+    setPan((p) => ({ x: p.x - e.deltaX, y: p.y - e.deltaY }));
+  });
   useEffect(() => {
     const v = viewport.current;
     if (!v) {
       return;
     }
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      if (e.ctrlKey || e.metaKey) {
-        const rect = v.getBoundingClientRect();
-        const cx = e.clientX - rect.left;
-        const cy = e.clientY - rect.top;
-        const prev = scaleRef.current;
-        // Mouse wheels send big steps, trackpad pinches small ones.
-        const speed = Math.abs(e.deltaY) > 40 ? 0.002 : 0.01;
-        const next = Math.min(
-          MAX_ZOOM,
-          Math.max(MIN_ZOOM, prev * Math.exp(-e.deltaY * speed))
-        );
-        userMoved.current = true;
-        const k = next / prev;
-        setZoom(next);
-        setPan((p) => ({ x: cx - (cx - p.x) * k, y: cy - (cy - p.y) * k }));
-        return;
-      }
-      userMoved.current = true;
-      setPan((p) => ({ x: p.x - e.deltaX, y: p.y - e.deltaY }));
-    };
-    v.addEventListener("wheel", onWheel, { passive: false });
-    return () => v.removeEventListener("wheel", onWheel);
+    const handleWheel = (e: WheelEvent) => onWheel(e, v);
+    v.addEventListener("wheel", handleWheel, { passive: false });
+    return () => v.removeEventListener("wheel", handleWheel);
   }, []);
 
   useEffect(() => {
@@ -425,14 +481,14 @@ export function Canvas({
       if (e.button === 1 || spaceDown || !onPage) {
         e.currentTarget.setPointerCapture(e.pointerId);
         panStart.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y };
-        userMoved.current = true;
+        setMovedFor(centerFor);
         setPanning(true);
         if (!onPage) {
           onSelect(null);
         }
       }
     },
-    [onSelect, pan.x, pan.y, spaceDown]
+    [centerFor, onSelect, pan.x, pan.y, spaceDown]
   );
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const s0 = panStart.current;
@@ -464,32 +520,34 @@ export function Canvas({
   }, [pageCount, revealed]);
 
   /** Glide so page `index` sits centred in the free room, top-aligned. */
-  const goToPage = useCallback((index: number) => {
-    const v = viewport.current;
-    const wrap =
-      content.current?.querySelectorAll<HTMLElement>("[data-page-wrap]")[index];
-    if (!(v && wrap)) {
-      return;
-    }
-    const wide = window.matchMedia("(min-width: 1024px)").matches;
-    const r = reserveRef.current;
-    const left = wide && r?.side === "left" ? r.px : 0;
-    const right = wide && r?.side === "right" ? r.px : 0;
-    const centre = (left + v.clientWidth - right) / 2;
-    const x = centre - (wrap.offsetLeft + wrap.offsetWidth / 2);
-    const y = 8 - wrap.offsetTop + 24;
-    userMoved.current = true;
-    setPan((p) => {
-      glide.current = { x: x - p.x, y: y - p.y };
-      return { x, y };
-    });
-  }, []);
+  const goToPage = useCallback(
+    (index: number) => {
+      const v = viewport.current;
+      const wrap =
+        content.current?.querySelectorAll<HTMLElement>("[data-page-wrap]")[
+          index
+        ];
+      if (!(v && wrap)) {
+        return;
+      }
+      const wide = window.matchMedia("(min-width: 1024px)").matches;
+      const left = wide && reserveSide === "left" ? reservePx : 0;
+      const right = wide && reserveSide === "right" ? reservePx : 0;
+      const centre = (left + v.clientWidth - right) / 2;
+      const x = centre - (wrap.offsetLeft + wrap.offsetWidth / 2);
+      const y = 8 - wrap.offsetTop + 24;
+      setMovedFor(centerFor);
+      setGlide({ x: x - pan.x, y: y - pan.y });
+      setPan({ x, y });
+    },
+    [centerFor, pan.x, pan.y, reservePx, reserveSide]
+  );
 
   const renderSheet = useCallback(
     (sheet: ReactNode, index: number, count: number) => (
       <div className="flex shrink-0 flex-col gap-2" data-page-wrap key={index}>
         <p
-          className="text-[12px] text-muted-foreground tabular-nums"
+          className="text-muted-foreground text-[12px] tabular-nums"
           dir={textDirection(getLocale())}
         >
           {count > 1
@@ -516,7 +574,7 @@ export function Canvas({
     <div className="relative h-full min-h-0">
       <div
         className={cn(
-          "relative h-full cursor-grab overflow-hidden bg-surface",
+          "bg-surface relative h-full cursor-grab overflow-hidden",
           panning ? "cursor-grabbing select-none" : null
         )}
         onPointerCancel={onPointerUp}
@@ -580,7 +638,7 @@ export function Canvas({
             </div>
             <DragOverlay dropAnimation={null}>
               {dragLabel ? (
-                <span className="inline-flex rounded-full bg-primary px-3 py-1 font-medium text-[12px] text-primary-foreground shadow-lg">
+                <span className="bg-primary text-primary-foreground inline-flex rounded-full px-3 py-1 text-[12px] font-medium shadow-lg">
                   {dragLabel}
                 </span>
               ) : null}
@@ -602,20 +660,20 @@ export function Canvas({
         )}
       >
         {pageCount > 1 ? (
-          <div className="flex items-center gap-0.5 rounded-full bg-background p-1 shadow-sm ring-1 ring-foreground/[0.07]">
+          <div className="bg-background ring-foreground/[0.07] flex items-center gap-0.5 rounded-full p-1 shadow-sm ring-1">
             {Array.from({ length: pageCount }, (_, i) => (
               <PageButton
                 cv={cv}
                 def={def}
                 index={i}
-                // biome-ignore lint/suspicious/noArrayIndexKey: pages are positions
+                // oxlint-disable-next-line react/no-array-index-key -- pages are positions
                 key={i}
                 onGo={goToPage}
               />
             ))}
           </div>
         ) : null}
-        <div className="flex items-center gap-0.5 rounded-full bg-background p-1 shadow-sm ring-1 ring-foreground/[0.07]">
+        <div className="bg-background ring-foreground/[0.07] flex items-center gap-0.5 rounded-full p-1 shadow-sm ring-1">
           <Button
             aria-label={m.ed_recentre()}
             onClick={zoomFit}
@@ -635,7 +693,7 @@ export function Canvas({
           </Button>
           <button
             className={cn(
-              "h-7 min-w-14 cursor-pointer rounded-full px-2 text-[12px] tabular-nums hover:bg-muted",
+              "hover:bg-muted h-7 min-w-14 cursor-pointer rounded-full px-2 text-[12px] tabular-nums",
               zoom === null && "text-muted-foreground"
             )}
             onClick={zoomFit}
@@ -656,108 +714,4 @@ export function Canvas({
       </div>
     </div>
   );
-}
-
-const PREVIEW_W = 150;
-
-/** A page-number button; hover shows a small preview, click glides to it. */
-function PageButton({
-  index,
-  cv,
-  def,
-  onGo,
-}: {
-  index: number;
-  cv: CV;
-  def: TemplateDef;
-  onGo: (index: number) => void;
-}) {
-  const go = useCallback(() => onGo(index), [index, onGo]);
-  const paper = PAPER_SIZES[resolveStyle(def, cv).paper];
-  const k = PREVIEW_W / paper.width;
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <button
-            aria-label={m.ed_go_to_page({ page: index + 1 })}
-            className="h-7 min-w-7 cursor-pointer rounded-full px-2 text-[12px] tabular-nums hover:bg-muted"
-            onClick={go}
-            type="button"
-          />
-        }
-      >
-        {index + 1}
-      </TooltipTrigger>
-      <TooltipContent
-        arrow={false}
-        className="bg-transparent p-0 shadow-none"
-        sideOffset={10}
-      >
-        <div
-          className="overflow-hidden rounded-[6px] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.08),0_16px_40px_rgba(0,0,0,0.16)] ring-1 ring-black/[0.06]"
-          style={{ width: PREVIEW_W, height: paper.height * k }}
-        >
-          <div
-            className="origin-top-left"
-            dir="ltr"
-            style={{ transform: `scale(${k})`, width: paper.width }}
-          >
-            <LinksDisabled.Provider value>
-              <PagedCv cv={cv} def={def} onlyPage={index} />
-            </LinksDisabled.Provider>
-          </div>
-        </div>
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
-/** Keeps a floating element positioned next to the CV element with `data-sel=path`. */
-export function useAnchor(
-  container: React.RefObject<HTMLElement | null>,
-  path: Path,
-  deps: unknown[]
-) {
-  const [pos, setPos] = useState<{
-    top: number;
-    left: number;
-    width: number;
-  } | null>(null);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: deps are passed in by the caller
-  useLayoutEffect(() => {
-    let frame = 0;
-    const update = () => {
-      const root = container.current;
-      const el = root?.querySelector<HTMLElement>(
-        `.cv-sheet [data-sel="${CSS.escape(path)}"]`
-      );
-      if (!(root && el)) {
-        setPos(null);
-        return;
-      }
-      const r = el.getBoundingClientRect();
-      const c = root.getBoundingClientRect();
-      setPos({ top: r.top - c.top, left: r.left - c.left, width: r.width });
-    };
-    frame = requestAnimationFrame(update);
-    return () => cancelAnimationFrame(frame);
-  }, [path, ...deps]);
-  return pos;
-}
-
-/** An entry (job, school, skill group…) where nothing is filled in yet. */
-function isBlankEntry(value: unknown): boolean {
-  if (typeof value === "string") {
-    return value.trim() === "";
-  }
-  if (Array.isArray(value)) {
-    return value.every(isBlankEntry);
-  }
-  if (value && typeof value === "object") {
-    return Object.entries(value).every(
-      ([k, v]) => k === "id" || k === "columns" || isBlankEntry(v)
-    );
-  }
-  return value === undefined || value === null;
-}
+};

@@ -1,4 +1,9 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+  getRouteApi,
+} from "@tanstack/react-router";
 import { useCallback } from "react";
 import { z } from "zod";
 
@@ -20,24 +25,19 @@ import {
 import { listAdminUsers } from "#/lib/admin/functions";
 import { m } from "#/paraglide/messages.js";
 
+const routeApi = getRouteApi("/admin/users/");
+
 const search = z.object({
   q: z.string().optional(),
   filter: z.enum(["all", "registered", "guests", "banned"]).optional(),
   page: z.number().int().min(0).optional(),
 });
 
-export const Route = createFileRoute("/admin/users/")({
-  validateSearch: search,
-  loaderDeps: ({ search: s }) => s,
-  loader: ({ deps }) => listAdminUsers({ data: deps }),
-  component: Users,
-});
-
 type Filter = "all" | "registered" | "guests" | "banned";
 
-function Users() {
-  const data = Route.useLoaderData();
-  const s = Route.useSearch();
+const Users = () => {
+  const data = routeApi.useLoaderData();
+  const s = routeApi.useSearch();
   const navigate = useNavigate({ from: "/admin/users/" });
   const setSearch = useCallback(
     (next: Partial<z.infer<typeof search>>) =>
@@ -105,7 +105,7 @@ function Users() {
                     <span className="block max-w-[260px] truncate font-medium">
                       {u.isAnonymous ? m.admin_guest() : u.name || u.email}
                     </span>
-                    <span className="block max-w-[260px] truncate text-[12px] text-muted-foreground">
+                    <span className="text-muted-foreground block max-w-[260px] truncate text-[12px]">
                       {u.isAnonymous ? u.id : u.email}
                     </span>
                   </span>
@@ -145,4 +145,11 @@ function Users() {
       </Panel>
     </>
   );
-}
+};
+
+export const Route = createFileRoute("/admin/users/")({
+  validateSearch: search,
+  loaderDeps: ({ search: s }) => s,
+  loader: ({ deps }) => listAdminUsers({ data: deps }),
+  component: Users,
+});

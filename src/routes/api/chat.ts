@@ -7,8 +7,8 @@ import {
   stepCountIs,
   streamText,
   toUIMessageStream,
-  type UIMessage,
 } from "ai";
+import type { UIMessage } from "ai";
 import { and, eq, lt, sql } from "drizzle-orm";
 
 import { db } from "#/db";
@@ -18,7 +18,8 @@ import { systemPrompt } from "#/lib/ai/prompt";
 import type { UsageStepDetail } from "#/lib/ai/usage-detail";
 import { auth } from "#/lib/auth";
 import { normalizeCv } from "#/lib/cv/schema";
-import { TEMPLATE_IDS, type TemplateId } from "#/lib/cv/templates";
+import { TEMPLATE_IDS } from "#/lib/cv/templates";
+import type { TemplateId } from "#/lib/cv/templates";
 import {
   GUEST_AI_LIMIT,
   GUEST_LIMIT,
@@ -43,7 +44,16 @@ import { deviceHash, spendDevice } from "#/lib/server/guest-device";
 import { externalizePhoto } from "#/lib/server/photos";
 import { cleanText, promptOf, stepDetail } from "#/lib/server/usage-capture";
 import { m } from "#/paraglide/messages.js";
-import { getLocale, isLocale, type Locale } from "#/paraglide/runtime.js";
+import { getLocale, isLocale } from "#/paraglide/runtime.js";
+import type { Locale } from "#/paraglide/runtime.js";
+
+const totalUsage = (usages: Parameters<typeof usageNumbers>[0][]) => {
+  let total = NO_USAGE;
+  for (const usage of usages) {
+    total = addUsage(total, usageNumbers(usage));
+  }
+  return total;
+};
 
 const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -197,7 +207,7 @@ export const Route = createFileRoute("/api/chat")({
                   model: modelId,
                   userId,
                   cvId,
-                  ...tr.usages.map(usageNumbers).reduce(addUsage, NO_USAGE),
+                  ...totalUsage(tr.usages),
                   steps: tr.usages.length + tr.failed,
                   durationMs: tr.durationMs,
                   error: tr.error ?? null,
@@ -275,10 +285,12 @@ export const Route = createFileRoute("/api/chat")({
         return createUIMessageStreamResponse({
           stream,
           // Keeps generating if the page goes away, and lets a reload replay it.
-          consumeSseStream: ({ stream: copy }) => {
-            recordStream(body.cvId, copy).catch((error) =>
-              console.error("[chat] record", error)
-            );
+          consumeSseStream: async ({ stream: copy }) => {
+            try {
+              await recordStream(body.cvId, copy);
+            } catch (error) {
+              console.error("[chat] record", error);
+            }
           },
         });
       },

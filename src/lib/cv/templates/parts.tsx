@@ -2,22 +2,13 @@ import type { ReactNode } from "react";
 
 import { E, Sel } from "#/components/cv/editing";
 import { m } from "#/paraglide/messages.js";
+
 import type { Block } from "../engine";
-import {
-  type CustomSection,
-  type CV,
-  isCustomKey,
-  type OrderKey,
-} from "../schema";
+import { isCustomKey } from "../schema";
+import type { CustomSection, CV, OrderKey } from "../schema";
 import { customIndex, Show, useExpanded } from "./kit";
 
-/**
- * Small building blocks shared by the newer templates. Each template still
- * sets its own type, spacing and markers through the class props.
- */
-
-/** One optional text field of an item, hidden when empty (shown while editing). */
-export function Field({
+export const Field = ({
   p,
   field,
   value,
@@ -37,26 +28,23 @@ export function Field({
   multiline?: boolean;
   before?: ReactNode;
   after?: ReactNode;
-}) {
-  return (
-    <Show path={p} value={value}>
-      <span className={className}>
-        {before}
-        <E
-          multiline={multiline}
-          path={`${p}.${field}`}
-          placeholder={placeholder}
-          rich={rich}
-          value={value}
-        />
-        {after}
-      </span>
-    </Show>
-  );
-}
+}) => (
+  <Show path={p} value={value}>
+    <span className={className}>
+      {before}
+      <E
+        multiline={multiline}
+        path={`${p}.${field}`}
+        placeholder={placeholder}
+        rich={rich}
+        value={value}
+      />
+      {after}
+    </span>
+  </Show>
+);
 
-/** The free-text description of an item as a paragraph. */
-export function Description({
+export const Description = ({
   p,
   value,
   className,
@@ -64,24 +52,21 @@ export function Description({
   p: string;
   value: string;
   className?: string;
-}) {
-  return (
-    <Show path={p} value={value}>
-      <p className={className}>
-        <E
-          multiline
-          path={`${p}.description`}
-          placeholder={m.cv_ph_description()}
-          rich
-          value={value}
-        />
-      </p>
-    </Show>
-  );
-}
+}) => (
+  <Show path={p} value={value}>
+    <p className={className}>
+      <E
+        multiline
+        path={`${p}.description`}
+        placeholder={m.cv_ph_description()}
+        rich
+        value={value}
+      />
+    </p>
+  </Show>
+);
 
-/** Bullet points; `marker` is drawn before each one (or use list-disc classes). */
-export function Bullets({
+export const Bullets = ({
   list,
   items,
   className,
@@ -93,7 +78,7 @@ export function Bullets({
   className?: string;
   itemClassName?: string;
   marker?: ReactNode;
-}) {
+}) => {
   if (items.length === 0) {
     return null;
   }
@@ -103,7 +88,7 @@ export function Bullets({
         <Sel
           as="li"
           className={itemClassName}
-          // biome-ignore lint/suspicious/noArrayIndexKey: bullets are plain strings; position is their identity
+          // oxlint-disable-next-line react/no-array-index-key -- bullets are plain strings; position is their identity
           key={j}
           label={m.cv_sel_bullet()}
           list={list}
@@ -120,10 +105,9 @@ export function Bullets({
       ))}
     </ul>
   );
-}
+};
 
-/** "Start – End" inline (no wrapping element), empty parts left out. */
-export function Dates({
+export const Dates = ({
   p,
   start,
   end,
@@ -133,7 +117,7 @@ export function Dates({
   start: string;
   end: string;
   separator?: string;
-}) {
+}) => {
   const expanded = useExpanded(p);
   return (
     <>
@@ -142,7 +126,7 @@ export function Dates({
       <Field field="end" p={p} placeholder={m.cv_ph_end()} value={end} />
     </>
   );
-}
+};
 
 interface TextField {
   field: string;
@@ -170,8 +154,8 @@ export interface EntryModel {
   title: TextField;
 }
 
-export function experienceEntries(cv: CV): EntryModel[] {
-  return cv.experience.map((e, i) => ({
+export const experienceEntries = (cv: CV): EntryModel[] =>
+  cv.experience.map((e, i) => ({
     id: e.id,
     p: `experience.${i}`,
     list: "experience",
@@ -183,10 +167,9 @@ export function experienceEntries(cv: CV): EntryModel[] {
     description: e.description,
     highlights: e.highlights,
   }));
-}
 
-export function educationEntries(cv: CV): EntryModel[] {
-  return cv.education.map((e, i) => ({
+export const educationEntries = (cv: CV): EntryModel[] =>
+  cv.education.map((e, i) => ({
     id: e.id,
     p: `education.${i}`,
     list: "education",
@@ -197,10 +180,9 @@ export function educationEntries(cv: CV): EntryModel[] {
     dates: { start: e.start, end: e.end },
     description: e.description,
   }));
-}
 
-export function projectEntries(cv: CV): EntryModel[] {
-  return cv.projects.map((pr, i) => ({
+export const projectEntries = (cv: CV): EntryModel[] =>
+  cv.projects.map((pr, i) => ({
     id: pr.id,
     p: `projects.${i}`,
     list: "projects",
@@ -214,13 +196,12 @@ export function projectEntries(cv: CV): EntryModel[] {
     description: pr.description,
     highlights: pr.highlights,
   }));
-}
 
-export function customEntries(
+export const customEntries = (
   section: CustomSection,
   list: string
-): EntryModel[] {
-  return section.items.map((it, i) => ({
+): EntryModel[] =>
+  section.items.map((it, i) => ({
     id: it.id,
     p: `${list}.items.${i}`,
     list: `${list}.items`,
@@ -236,10 +217,8 @@ export function customEntries(
     description: it.description,
     highlights: it.highlights,
   }));
-}
 
-/** Title (or subtitle) of an entry as an inline editable field. */
-export function EntryText({
+export const EntryText = ({
   e,
   which,
   className,
@@ -249,7 +228,7 @@ export function EntryText({
   which: "title" | "sub";
   className?: string;
   before?: ReactNode;
-}) {
+}) => {
   const f = which === "title" ? e.title : e.sub;
   if (!f) {
     return null;
@@ -275,16 +254,15 @@ export function EntryText({
       value={f.value}
     />
   );
-}
+};
 
-/** The entry's dates: a range, or the single date of a custom entry. */
-export function EntryDates({
+export const EntryDates = ({
   e,
   separator,
 }: {
   e: EntryModel;
   separator?: string;
-}) {
+}) => {
   if (e.dates) {
     return (
       <Dates
@@ -301,15 +279,12 @@ export function EntryDates({
   return (
     <Field field="date" p={e.p} placeholder={m.cv_ph_date()} value={e.date} />
   );
-}
+};
 
-/** True when the entry has any date to show (or is being edited). */
-export function hasDates(e: EntryModel) {
-  return Boolean(e.dates ? e.dates.start || e.dates.end : e.date);
-}
+export const hasDates = (e: EntryModel) =>
+  Boolean(e.dates ? e.dates.start || e.dates.end : e.date);
 
-/** The entry's location, if it has one. */
-export function EntryLocation({
+export const EntryLocation = ({
   e,
   className,
   before,
@@ -317,7 +292,7 @@ export function EntryLocation({
   e: EntryModel;
   className?: string;
   before?: ReactNode;
-}) {
+}) => {
   if (e.location === undefined) {
     return null;
   }
@@ -331,10 +306,9 @@ export function EntryLocation({
       value={e.location}
     />
   );
-}
+};
 
-/** Entries of an entry-style section, or null for skills and languages. */
-export function sectionEntries(cv: CV, key: OrderKey): EntryModel[] | null {
+export const sectionEntries = (cv: CV, key: OrderKey): EntryModel[] | null => {
   if (isCustomKey(key)) {
     const i = customIndex(cv, key);
     return i === -1 ? [] : customEntries(cv.custom[i], `custom.${i}`);
@@ -349,7 +323,7 @@ export function sectionEntries(cv: CV, key: OrderKey): EntryModel[] | null {
     return projectEntries(cv);
   }
   return null;
-}
+};
 
 export interface SectionRenderers {
   /** Blocks for one entry-style item. */
@@ -365,14 +339,13 @@ export interface SectionRenderers {
   skills: (cv: CV) => Block[];
 }
 
-/** Heading plus items for each section in order, drawn by the template's renderers. */
-export function sectionStream(
+export const sectionStream = (
   cv: CV,
   keys: OrderKey[],
   r: SectionRenderers
-): Block[] {
+): Block[] => {
   const blocks: Block[] = [];
-  keys.forEach((key, n) => {
+  for (const [n, key] of keys.entries()) {
     blocks.push(r.heading(key, n));
     const entries = sectionEntries(cv, key);
     if (entries) {
@@ -382,6 +355,6 @@ export function sectionStream(
     } else if (key === "languages") {
       blocks.push(...r.languages(cv));
     }
-  });
+  }
   return blocks;
-}
+};

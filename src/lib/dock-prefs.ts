@@ -18,7 +18,7 @@ export const DEFAULT_DOCK: DockPrefs = {
   minimized: false,
 };
 
-export function parseDock(raw: string | undefined | null): DockPrefs {
+export const parseDock = (raw: string | undefined | null): DockPrefs => {
   try {
     const v = JSON.parse(decodeURIComponent(raw ?? ""));
     return {
@@ -29,7 +29,7 @@ export function parseDock(raw: string | undefined | null): DockPrefs {
   } catch {
     return DEFAULT_DOCK;
   }
-}
+};
 
 /**
  * Read on the server so the editor renders the chat card at its saved side
@@ -37,6 +37,8 @@ export function parseDock(raw: string | undefined | null): DockPrefs {
  */
 export const getDockPrefs = createServerFn({ method: "GET" }).handler(() => {
   const cookie = getRequestHeader("cookie") ?? "";
-  const match = cookie.match(new RegExp(`(?:^|; )${DOCK_COOKIE}=([^;]*)`));
-  return parseDock(match?.[1]);
+  const match = cookie.match(
+    new RegExp(`(?:^|; )${DOCK_COOKIE}=(?<value>[^;]*)`, "u")
+  );
+  return parseDock(match?.groups?.value);
 });

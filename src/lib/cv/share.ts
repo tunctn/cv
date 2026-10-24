@@ -57,6 +57,11 @@ export const clearChat = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const publicMessage = (msg: UIMessage): UIMessage => ({
+  ...msg,
+  parts: msg.parts.filter((p) => p.type !== "file"),
+});
+
 /** A shared CV as anyone with the link sees it. */
 export const getSharedCv = createServerFn({ method: "GET" })
   .validator(z.object({ shareId: z.string().min(8).max(32) }))
@@ -79,8 +84,3 @@ export const getSharedCv = createServerFn({ method: "GET" })
       updatedAt: row.updatedAt.toISOString(),
     };
   });
-
-/** Drop attached files (old CVs, screenshots) from messages shown publicly. */
-function publicMessage(msg: UIMessage): UIMessage {
-  return { ...msg, parts: msg.parts.filter((p) => p.type !== "file") };
-}

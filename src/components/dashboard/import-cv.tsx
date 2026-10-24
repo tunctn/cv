@@ -1,12 +1,13 @@
 import { FileUploadIcon } from "@hugeicons-pro/core-stroke-rounded";
 import { useNavigate } from "@tanstack/react-router";
 import {
-  type ComponentProps,
   useCallback,
   useEffect,
+  useEffectEvent,
   useRef,
   useState,
 } from "react";
+import type { ComponentProps } from "react";
 import { toast } from "sonner";
 
 import { Icon } from "#/components/icon";
@@ -16,8 +17,7 @@ import { IMPORT_ACCEPT, importCv } from "#/lib/import-cv";
 import { cn } from "#/lib/utils";
 import { m } from "#/paraglide/messages.js";
 
-/** Import a file as a new CV, with a toast while it uploads. */
-export function useCvImport() {
+export const useCvImport = () => {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const run = useCallback(
@@ -31,12 +31,12 @@ export function useCvImport() {
         const { id, search } = await importCv(file);
         toast.dismiss(toastId);
         await navigate({ to: "/cv/$id", params: { id }, search });
-      } catch (e) {
+      } catch (error) {
         // A guest at their CV limit already sees the sign-up dialog.
-        if (isGuestLimit(e)) {
+        if (isGuestLimit(error)) {
           toast.dismiss(toastId);
         } else {
-          toast.error((e as Error).message || m.import_failed(), {
+          toast.error((error as Error).message || m.import_failed(), {
             id: toastId,
           });
         }
@@ -46,10 +46,9 @@ export function useCvImport() {
     [busy, navigate]
   );
   return { busy, run };
-}
+};
 
-/** A button that opens the file picker and imports the chosen file. */
-export function ImportButton({
+export const ImportButton = ({
   busy,
   onFile,
   label,
@@ -59,7 +58,7 @@ export function ImportButton({
   busy: boolean;
   onFile: (file: File) => void;
   label?: string;
-} & Omit<ComponentProps<typeof Button>, "onClick">) {
+} & Omit<ComponentProps<typeof Button>, "onClick">) => {
   const input = useRef<HTMLInputElement>(null);
   const open = useCallback(() => input.current?.click(), []);
   const onChange = useCallback(
@@ -92,30 +91,25 @@ export function ImportButton({
       />
     </>
   );
-}
+};
 
-/**
- * Drop a file anywhere on the page to import it. A quiet full-page overlay
- * shows while a file is dragged over the window.
- */
-export function FileDropOverlay({
+export const FileDropOverlay = ({
   onFile,
   disabled,
 }: {
   onFile: (file: File) => void;
   disabled?: boolean;
-}) {
+}) => {
   const [over, setOver] = useState(false);
   const depth = useRef(0);
-  const fileRef = useRef(onFile);
-  fileRef.current = onFile;
+  const fileDropped = useEffectEvent((file: File) => onFile(file));
 
   useEffect(() => {
     if (disabled) {
       return;
     }
     const hasFiles = (e: DragEvent) =>
-      Array.from(e.dataTransfer?.types ?? []).includes("Files");
+      [...(e.dataTransfer?.types ?? [])].includes("Files");
     const enter = (e: DragEvent) => {
       if (!hasFiles(e)) {
         return;
@@ -146,7 +140,7 @@ export function FileDropOverlay({
       setOver(false);
       const file = e.dataTransfer?.files[0];
       if (file) {
-        fileRef.current(file);
+        fileDropped(file);
       }
     };
     window.addEventListener("dragenter", enter);
@@ -165,21 +159,21 @@ export function FileDropOverlay({
     <div
       aria-hidden={!over}
       className={cn(
-        "pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-6 backdrop-blur-sm transition-opacity duration-150",
+        "bg-background/80 pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-sm transition-opacity duration-150",
         over ? "opacity-100" : "opacity-0"
       )}
     >
-      <div className="flex w-full max-w-[520px] flex-col items-center rounded-[28px] border-2 border-foreground/20 border-dashed bg-surface px-8 py-14 text-center">
-        <span className="flex size-12 items-center justify-center rounded-full bg-background shadow-sm">
+      <div className="border-foreground/20 bg-surface flex w-full max-w-[520px] flex-col items-center rounded-[28px] border-2 border-dashed px-8 py-14 text-center">
+        <span className="bg-background flex size-12 items-center justify-center rounded-full shadow-sm">
           <Icon className="size-6" icon={FileUploadIcon} />
         </span>
-        <p className="mt-4 font-semibold text-[20px] tracking-[-0.02em]">
+        <p className="mt-4 text-[20px] font-semibold tracking-[-0.02em]">
           {m.import_drop_title()}
         </p>
-        <p className="mt-1.5 text-[14px] text-muted-foreground">
+        <p className="text-muted-foreground mt-1.5 text-[14px]">
           {m.import_drop_body()}
         </p>
       </div>
     </div>
   );
-}
+};

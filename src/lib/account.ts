@@ -18,11 +18,10 @@ import { m } from "#/paraglide/messages.js";
 const AVATAR_PATH = "/api/avatar/";
 /** A 256×256 WebP (or PNG where the browser can't encode WebP), as a data URL. */
 const AVATAR_DATA_URL =
-  /^data:(image\/(?:webp|png|jpeg));base64,([A-Za-z0-9+/=]+)$/;
+  /^data:(?<mediaType>image\/(?:webp|png|jpeg));base64,(?<base64>[A-Za-z0-9+/=]+)$/u;
 const MAX_AVATAR_BYTES = 300 * 1024;
 
-/** The signed-in, non-guest user, or an error. */
-async function requireMember() {
+const requireMember = async () => {
   const session = await getSession();
   const u = session?.user as
     | (NonNullable<typeof session>["user"] & { isAnonymous?: boolean | null })
@@ -31,7 +30,7 @@ async function requireMember() {
     throw new Error(m.err_not_signed_in());
   }
   return u;
-}
+};
 
 /** What the settings page shows: profile, sign-in methods. */
 export const getAccount = createServerFn({ method: "GET" }).handler(
@@ -111,7 +110,7 @@ export const uploadAvatar = createServerFn({ method: "POST" })
     if (!match) {
       throw new Error(m.settings_photo_failed());
     }
-    const [, mediaType, base64] = match;
+    const { mediaType = "", base64 = "" } = match.groups ?? {};
     if (Buffer.byteLength(base64, "base64") > MAX_AVATAR_BYTES) {
       throw new Error(m.settings_photo_too_large());
     }

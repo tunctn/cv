@@ -8,7 +8,8 @@ import { externalizePhoto } from "#/lib/server/photos";
 import { requireUser } from "#/lib/server/session";
 import { m } from "#/paraglide/messages.js";
 
-import { type CV, cvSchema, normalizeCv } from "./schema";
+import { cvSchema, normalizeCv } from "./schema";
+import type { CV } from "./schema";
 import { TEMPLATE_IDS } from "./templates";
 
 /** Versions kept per CV; older ones are dropped. */
@@ -23,7 +24,7 @@ export interface StoredVersion {
   template: string;
 }
 
-async function ownCv(cvId: string) {
+const ownCv = async (cvId: string) => {
   const user = await requireUser();
   const [row] = await db
     .select({ id: cvTable.id })
@@ -32,13 +33,12 @@ async function ownCv(cvId: string) {
   if (!row) {
     throw new Error(m.err_cv_not_found());
   }
-}
+};
 
-/** Stored versions, with any pre-R2 photo reference pointed at R2. */
-function withPhotos(
+const withPhotos = (
   rows: (typeof cvVersion.$inferSelect)[]
-): Promise<StoredVersion[]> {
-  return Promise.all(
+): Promise<StoredVersion[]> =>
+  Promise.all(
     rows.map(async (r) => ({
       id: r.id,
       at: r.createdAt.getTime(),
@@ -48,7 +48,6 @@ function withPhotos(
       cv: await externalizePhoto(normalizeCv(r.data)),
     }))
   );
-}
 
 /** Versions of a CV, oldest first; `before` pages further back. */
 export const listVersions = createServerFn({ method: "GET" })
@@ -75,7 +74,7 @@ export const listVersions = createServerFn({ method: "GET" })
       .orderBy(desc(cvVersion.createdAt))
       .limit(data.limit + 1);
     const more = rows.length > data.limit;
-    const page = await withPhotos(rows.slice(0, data.limit).reverse());
+    const page = await withPhotos(rows.slice(0, data.limit).toReversed());
     return { versions: page, more };
   });
 

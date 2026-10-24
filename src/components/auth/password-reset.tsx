@@ -9,7 +9,7 @@ import { Input } from "#/components/ui/input";
 import { authClient } from "#/lib/auth-client";
 import { m } from "#/paraglide/messages.js";
 
-function Shell({
+const Shell = ({
   title,
   sub,
   children,
@@ -17,43 +17,38 @@ function Shell({
   title: string;
   sub: string;
   children: React.ReactNode;
-}) {
-  return (
-    <div className="flex min-h-dvh flex-col">
-      <div className="flex flex-1 flex-col items-center px-4 py-10">
-        <Link className="flex items-center" to="/">
-          <Logo />
-        </Link>
-        <div className="my-auto w-full max-w-[380px] py-10">
-          <h1 className="text-center font-semibold text-[28px] tracking-[-0.03em]">
-            {title}
-          </h1>
-          <p className="mt-2 text-center text-[15px] text-muted-foreground">
-            {sub}
-          </p>
-          {children}
-        </div>
-      </div>
-      <SiteFooter />
-    </div>
-  );
-}
-
-function BackToLogin() {
-  return (
-    <p className="mt-6 text-center text-muted-foreground text-sm">
-      <Link
-        className="font-medium text-foreground underline-offset-4 hover:underline"
-        to="/login"
-      >
-        {m.forgot_back()}
+}) => (
+  <div className="flex min-h-dvh flex-col">
+    <div className="flex flex-1 flex-col items-center px-4 py-10">
+      <Link className="flex items-center" to="/">
+        <Logo />
       </Link>
-    </p>
-  );
-}
+      <div className="my-auto w-full max-w-[380px] py-10">
+        <h1 className="text-center text-[28px] font-semibold tracking-[-0.03em]">
+          {title}
+        </h1>
+        <p className="text-muted-foreground mt-2 text-center text-[15px]">
+          {sub}
+        </p>
+        {children}
+      </div>
+    </div>
+    <SiteFooter />
+  </div>
+);
 
-/** "Forgot password": ask for the email, send a reset link. */
-export function ForgotPasswordForm() {
+const BackToLogin = () => (
+  <p className="text-muted-foreground mt-6 text-center text-sm">
+    <Link
+      className="text-foreground font-medium underline-offset-4 hover:underline"
+      to="/login"
+    >
+      {m.forgot_back()}
+    </Link>
+  </p>
+);
+
+export const ForgotPasswordForm = () => {
   const emailId = useId();
   const [busy, setBusy] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -100,10 +95,9 @@ export function ForgotPasswordForm() {
       <BackToLogin />
     </Shell>
   );
-}
+};
 
-/** The page the reset email links to: set a new password with the token. */
-export function ResetPasswordForm({ token }: { token: string }) {
+export const ResetPasswordForm = ({ token }: { token: string }) => {
   const passwordId = useId();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
@@ -155,4 +149,4 @@ export function ResetPasswordForm({ token }: { token: string }) {
       <BackToLogin />
     </Shell>
   );
-}
+};

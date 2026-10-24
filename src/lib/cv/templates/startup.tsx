@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { E, Sel } from "#/components/cv/editing";
 import { m } from "#/paraglide/messages.js";
+
 import type { Block, TemplateDef } from "../engine";
 import type { CustomSection, CV, OrderKey, SectionKey } from "../schema";
 import {
@@ -20,21 +21,19 @@ import { Rich } from "./shared";
 const GRID = "grid gap-x-[18px]";
 const LABEL =
   "font-extrabold text-[11.4px] text-[#0b0d12] uppercase leading-[1.5] tracking-[0.04em] [overflow-wrap:anywhere]";
-const WORDS = /\s+/;
+const WORDS = /\s+/u;
 const DATES =
   "shrink-0 whitespace-nowrap text-right text-[10.8px] text-[#6b7280] tabular-nums";
-const MARKUP = /\*\*|__|\*/g;
+const MARKUP = /\*\*|__|\*/gu;
 
-function Head({ left, right }: { left: ReactNode; right?: ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-between gap-4">
-      <p className="min-w-0">{left}</p>
-      {right}
-    </div>
-  );
-}
+const Head = ({ left, right }: { left: ReactNode; right?: ReactNode }) => (
+  <div className="flex items-baseline justify-between gap-4">
+    <p className="min-w-0">{left}</p>
+    {right}
+  </div>
+);
 
-function Bullets({ list, items }: { list: string; items: string[] }) {
+const Bullets = ({ list, items }: { list: string; items: string[] }) => {
   if (items.length === 0) {
     return null;
   }
@@ -44,7 +43,7 @@ function Bullets({ list, items }: { list: string; items: string[] }) {
         <Sel
           as="li"
           className="relative pl-[12px]"
-          // biome-ignore lint/suspicious/noArrayIndexKey: bullets are plain strings; position is their identity
+          // oxlint-disable-next-line react/no-array-index-key -- bullets are plain strings; position is their identity
           key={j}
           label={m.cv_sel_bullet()}
           list={list}
@@ -61,26 +60,23 @@ function Bullets({ list, items }: { list: string; items: string[] }) {
       ))}
     </ul>
   );
-}
+};
 
-function Description({ p, value }: { p: string; value: string }) {
-  return (
-    <Show path={p} value={value}>
-      <p className="mt-px text-[#30343b]">
-        <E
-          multiline
-          path={`${p}.description`}
-          placeholder={m.cv_ph_description()}
-          rich
-          value={value}
-        />
-      </p>
-    </Show>
-  );
-}
+const Description = ({ p, value }: { p: string; value: string }) => (
+  <Show path={p} value={value}>
+    <p className="mt-px text-[#30343b]">
+      <E
+        multiline
+        path={`${p}.description`}
+        placeholder={m.cv_ph_description()}
+        rich
+        value={value}
+      />
+    </p>
+  </Show>
+);
 
-/** " · value" after the title, only when filled in. */
-function Then({
+const Then = ({
   p,
   path,
   value,
@@ -92,19 +88,17 @@ function Then({
   value: string;
   placeholder: string;
   className?: string;
-}) {
-  return (
-    <Show path={p} value={value}>
-      <span className={className}>
-        {" · "}
-        <E path={path} placeholder={placeholder} value={value} />
-      </span>
-    </Show>
-  );
-}
+}) => (
+  <Show path={p} value={value}>
+    <span className={className}>
+      {" · "}
+      <E path={path} placeholder={placeholder} value={value} />
+    </span>
+  </Show>
+);
 
-function experienceBlocks(cv: CV): Block[] {
-  return cv.experience.map((e, i) => {
+const experienceBlocks = (cv: CV): Block[] =>
+  cv.experience.map((e, i) => {
     const p = `experience.${i}`;
     return {
       key: e.id,
@@ -147,10 +141,9 @@ function experienceBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function educationBlocks(cv: CV): Block[] {
-  return cv.education.map((e, i) => {
+const educationBlocks = (cv: CV): Block[] =>
+  cv.education.map((e, i) => {
     const p = `education.${i}`;
     return {
       key: e.id,
@@ -192,10 +185,9 @@ function educationBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function skillBlocks(cv: CV): Block[] {
-  return cv.skills.map((s, i) => {
+const skillBlocks = (cv: CV): Block[] =>
+  cv.skills.map((s, i) => {
     const p = `skills.${i}`;
     return {
       key: s.id,
@@ -233,10 +225,9 @@ function skillBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function projectBlocks(cv: CV): Block[] {
-  return cv.projects.map((pr, i) => {
+const projectBlocks = (cv: CV): Block[] =>
+  cv.projects.map((pr, i) => {
     const p = `projects.${i}`;
     return {
       key: pr.id,
@@ -271,27 +262,24 @@ function projectBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function languageBlocks(cv: CV): Block[] {
-  return [
-    {
-      key: "languages",
-      gap: 6,
-      node: (
-        <InlineLanguages
-          className="text-[#30343b]"
-          cv={cv}
-          levelClassName="text-[#6b7280]"
-          separator={<span className="mx-[6px] text-[#c4c8cf]">/</span>}
-        />
-      ),
-    },
-  ];
-}
+const languageBlocks = (cv: CV): Block[] => [
+  {
+    key: "languages",
+    gap: 6,
+    node: (
+      <InlineLanguages
+        className="text-[#30343b]"
+        cv={cv}
+        levelClassName="text-[#6b7280]"
+        separator={<span className="mx-[6px] text-[#c4c8cf]">/</span>}
+      />
+    ),
+  },
+];
 
-function customBlocks(section: CustomSection, list: string): Block[] {
-  return section.items.map((it, i) => {
+const customBlocks = (section: CustomSection, list: string): Block[] =>
+  section.items.map((it, i) => {
     const p = `${list}.items.${i}`;
     return {
       key: it.id,
@@ -342,7 +330,6 @@ function customBlocks(section: CustomSection, list: string): Block[] {
       ),
     };
   });
-}
 
 const SECTION_BLOCKS: Record<SectionKey, (cv: CV) => Block[]> = {
   experience: experienceBlocks,
@@ -352,27 +339,20 @@ const SECTION_BLOCKS: Record<SectionKey, (cv: CV) => Block[]> = {
   languages: languageBlocks,
 };
 
-function SectionTitle({ cv, k }: { cv: CV; k: OrderKey }) {
-  return (
-    <Sel label={m.cv_sel_section()} list="sections" path={`sections.${k}`}>
-      <h2 className={LABEL}>
-        <E placeholder={m.cv_ph_section()} {...sectionLabel(cv, k)} />
-      </h2>
-    </Sel>
-  );
-}
+const SectionTitle = ({ cv, k }: { cv: CV; k: OrderKey }) => (
+  <Sel label={m.cv_sel_section()} list="sections" path={`sections.${k}`}>
+    <h2 className={LABEL}>
+      <E placeholder={m.cv_ph_section()} {...sectionLabel(cv, k)} />
+    </h2>
+  </Sel>
+);
 
-/**
- * Puts a section's blocks in the right column; the first one carries the
- * section label in the gutter and a rule above, so a label never ends up
- * alone at the bottom of a page.
- */
-function gutter(
+const gutter = (
   label: ReactNode,
   blocks: Block[],
   key: string,
   width: number
-): Block[] {
+): Block[] => {
   const cols = { gridTemplateColumns: `${width}px minmax(0, 1fr)` };
   const first = `${GRID} border-[#0b0d12] border-t-2 pt-[7px]`;
   if (blocks.length === 0) {
@@ -399,10 +379,9 @@ function gutter(
       </div>
     ),
   }));
-}
+};
 
-/** Gutter width that fits the longest word of the section labels (they are set in caps). */
-function gutterWidth(cv: CV, keys: OrderKey[]) {
+const gutterWidth = (cv: CV, keys: OrderKey[]) => {
   const labels = [
     cv.labels.profile,
     ...keys.map((k) => sectionLabel(cv, k).value),
@@ -412,12 +391,9 @@ function gutterWidth(cv: CV, keys: OrderKey[]) {
     ...labels.flatMap((l) => l.split(WORDS).map((w) => w.length))
   );
   return Math.round(Math.min(144, Math.max(88, longest * 8.4 + 6)));
-}
+};
 
-/** Plain text of a field for the highlights row (markup removed). */
-function plain(text: string) {
-  return text.replace(MARKUP, "");
-}
+const plain = (text: string) => text.replaceAll(MARKUP, "");
 
 interface Highlight {
   key: string;
@@ -426,8 +402,7 @@ interface Highlight {
   value: string;
 }
 
-/** Up to three facts at a glance: current role, latest degree, top skills. */
-function highlightsOf(cv: CV): Highlight[] {
+const highlightsOf = (cv: CV): Highlight[] => {
   const out: Highlight[] = [];
   const [job] = cv.experience;
   if (job && (job.role || job.company)) {
@@ -458,32 +433,30 @@ function highlightsOf(cv: CV): Highlight[] {
     });
   }
   return out;
-}
+};
 
-function Highlights({ items }: { items: Highlight[] }) {
-  return (
-    <div className="grid grid-cols-3 gap-[8px]">
-      {items.map((h) => (
-        <div
-          className="rounded-[6px] bg-[color-mix(in_srgb,var(--cv-accent)_7%,white)] px-[11px] py-[8px]"
-          key={h.key}
-        >
-          <p className="font-extrabold text-[9.6px] text-[var(--cv-accent)] uppercase tracking-[0.12em]">
-            {h.label}
+const Highlights = ({ items }: { items: Highlight[] }) => (
+  <div className="grid grid-cols-3 gap-[8px]">
+    {items.map((h) => (
+      <div
+        className="rounded-[6px] bg-[color-mix(in_srgb,var(--cv-accent)_7%,white)] px-[11px] py-[8px]"
+        key={h.key}
+      >
+        <p className="text-[9.6px] font-extrabold tracking-[0.12em] text-[var(--cv-accent)] uppercase">
+          {h.label}
+        </p>
+        <p className="mt-[2px] text-[12px] leading-[1.3] font-bold text-[#0b0d12]">
+          <Rich text={h.value} />
+        </p>
+        {h.sub ? (
+          <p className="mt-px text-[10.6px] leading-[1.35] text-[#6b7280]">
+            {h.sub}
           </p>
-          <p className="mt-[2px] font-bold text-[#0b0d12] text-[12px] leading-[1.3]">
-            <Rich text={h.value} />
-          </p>
-          {h.sub ? (
-            <p className="mt-px text-[#6b7280] text-[10.6px] leading-[1.35]">
-              {h.sub}
-            </p>
-          ) : null}
-        </div>
-      ))}
-    </div>
-  );
-}
+        ) : null}
+      </div>
+    ))}
+  </div>
+);
 
 /**
  * One dense page for engineers and startup roles: a highlights row under the
@@ -512,7 +485,7 @@ export const startup: TemplateDef = {
           <Sel label={m.cv_sel_details()} path="basics">
             <div className="flex items-end justify-between gap-6">
               <div className="min-w-0">
-                <h1 className="font-extrabold text-[#0b0d12] text-[29px] leading-[1.05] tracking-[-0.035em]">
+                <h1 className="text-[29px] leading-[1.05] font-extrabold tracking-[-0.035em] text-[#0b0d12]">
                   <E
                     path="basics.name"
                     placeholder={m.cv_ph_your_name()}
@@ -520,7 +493,7 @@ export const startup: TemplateDef = {
                   />
                 </h1>
                 <Show path="basics" value={b.headline}>
-                  <p className="mt-[4px] font-medium text-[#4b5058] text-[13px]">
+                  <p className="mt-[4px] text-[13px] font-medium text-[#4b5058]">
                     <E
                       path="basics.headline"
                       placeholder={m.cv_ph_headline()}
@@ -530,7 +503,7 @@ export const startup: TemplateDef = {
                 </Show>
               </div>
               <Contacts
-                className="max-w-[48%] shrink-0 text-right text-[#4b5058] text-[10.8px] leading-[1.5]"
+                className="max-w-[48%] shrink-0 text-right text-[10.8px] leading-[1.5] text-[#4b5058]"
                 cv={cv}
                 itemClassName="block break-words"
               />

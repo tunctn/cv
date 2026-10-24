@@ -2,14 +2,10 @@ import type { ReactNode } from "react";
 
 import { E, Sel } from "#/components/cv/editing";
 import { m } from "#/paraglide/messages.js";
+
 import type { Block, TemplateDef } from "../engine";
-import {
-  type CustomSection,
-  type CV,
-  isCustomKey,
-  type SectionKey,
-  type SkillItem,
-} from "../schema";
+import { isCustomKey } from "../schema";
+import type { CustomSection, CV, SectionKey, SkillItem } from "../schema";
 import {
   Contacts,
   DateRange,
@@ -23,41 +19,37 @@ import {
 import { Rich } from "./shared";
 
 /** Sections that live in the coloured side column. */
-const SIDE: SectionKey[] = ["skills", "languages"];
+const SIDE = new Set<SectionKey>(["skills", "languages"]);
 
-const CEFR = /\b([ABC])([12])\b/i;
-const OUT_OF = /^(\d(?:[.,]\d)?)\s*\/\s*(5|10)$/;
-const PERCENT = /^(\d{1,3})\s*%$/;
-const WHITESPACE = /\s+/;
+const CEFR = /\b(?<level>[ABC])(?<step>[12])\b/iu;
+const OUT_OF = /^(?<score>\d(?:[.,]\d)?)\s*\/\s*(?<max>5|10)$/u;
+const PERCENT = /^(?<pct>\d{1,3})\s*%$/u;
+const WHITESPACE = /\s+/u;
 /** Spaces, stray "&" and a closing full stop around a list item. */
-const TRIM = /^[\s&+]+|[\s.]+$/g;
+const TRIM = /^[\s&+]+|[\s.]+$/gu;
 
 /** Words that name a level, in the languages people most often write CVs in. */
 const WORDS: [RegExp, number][] = [
   [
-    /native|mother|muttersprach|langue maternelle|nativo|madre|anadil|moedertaal|ojczysty|bilingual|zweisprachig/i,
+    /native|mother|muttersprach|langue maternelle|nativo|madre|anadil|moedertaal|ojczysty|bilingual|zweisprachig/iu,
     1,
   ],
-  [/expert|master|exzellent|excellent|verhandlungssicher|c2/i, 1],
+  [/expert|master|exzellent|excellent|verhandlungssicher|c2/iu, 1],
   [
-    /fluent|fließend|fliessend|courant|fluido|fluente|akıcı|vloeiend|advanced|fortgeschritten|avanzado|avancé/i,
+    /fluent|fließend|fliessend|courant|fluido|fluente|akıcı|vloeiend|advanced|fortgeschritten|avanzado|avancé/iu,
     0.8,
   ],
   [
-    /proficient|very good|sehr gut|good|gut|intermediate|mittel|conversational|konversation|intermédiaire|intermedio/i,
+    /proficient|very good|sehr gut|good|gut|intermediate|mittel|conversational|konversation|intermédiaire|intermedio/iu,
     0.6,
   ],
   [
-    /basic|beginner|elementary|grundkenntnisse|anfänger|débutant|básico|basico|temel/i,
+    /basic|beginner|elementary|grundkenntnisse|anfänger|débutant|básico|basico|temel/iu,
     0.3,
   ],
 ];
 
-/**
- * A 0..1 level read from text like "C1", "Fluent", "4/5" or "80%", or null
- * when the text does not name a level (then it is shown as written).
- */
-export function levelOf(text: string): number | null {
+export const levelOf = (text: string): number | null => {
   const t = text.trim();
   if (!t || t.length > 40) {
     return null;
@@ -65,16 +57,22 @@ export function levelOf(text: string): number | null {
   const cefr = CEFR.exec(t);
   if (cefr) {
     const step =
-      (cefr[1].toUpperCase().charCodeAt(0) - 65) * 2 + Number(cefr[2]);
+      (((cefr.groups?.level ?? "A").toUpperCase().codePointAt(0) ?? 65) - 65) *
+        2 +
+      Number(cefr.groups?.step);
     return step / 6;
   }
   const outOf = OUT_OF.exec(t);
   if (outOf) {
-    return Math.min(1, Number(outOf[1].replace(",", ".")) / Number(outOf[2]));
+    return Math.min(
+      1,
+      Number((outOf.groups?.score ?? "0").replace(",", ".")) /
+        Number(outOf.groups?.max)
+    );
   }
   const pct = PERCENT.exec(t);
   if (pct) {
-    return Math.min(1, Number(pct[1]) / 100);
+    return Math.min(1, Number(pct.groups?.pct) / 100);
   }
   if (t.split(WHITESPACE).length > 3) {
     return null;
@@ -85,10 +83,9 @@ export function levelOf(text: string): number | null {
     }
   }
   return null;
-}
+};
 
-/** Five dots, filled up to the level. */
-function Dots({ level }: { level: number }) {
+const Dots = ({ level }: { level: number }) => {
   const filled = Math.max(1, Math.round(level * 5));
   return (
     <span className="flex shrink-0 gap-[4px]">
@@ -100,21 +97,18 @@ function Dots({ level }: { level: number }) {
       ))}
     </span>
   );
-}
+};
 
-function Bar({ level }: { level: number }) {
-  return (
-    <span className="mt-[4px] block h-[4px] rounded-full bg-white/15">
-      <span
-        className="block h-full rounded-full bg-white/85"
-        style={{ width: `${Math.round(Math.max(0.1, level) * 100)}%` }}
-      />
-    </span>
-  );
-}
+const Bar = ({ level }: { level: number }) => (
+  <span className="mt-[4px] block h-[4px] rounded-full bg-white/15">
+    <span
+      className="block h-full rounded-full bg-white/85"
+      style={{ width: `${Math.round(Math.max(0.1, level) * 100)}%` }}
+    />
+  </span>
+);
 
-/** Splits "a, b (x, y) & c" at commas, semicolons, line breaks and " & ", never inside brackets. */
-function splitList(text: string): string[] {
+const splitList = (text: string): string[] => {
   const parts: string[] = [];
   let depth = 0;
   let cur = "";
@@ -134,20 +128,18 @@ function splitList(text: string): string[] {
     cur += ch;
   }
   parts.push(cur);
-  return parts.map((x) => x.replace(TRIM, "")).filter(Boolean);
-}
+  return parts.map((x) => x.replaceAll(TRIM, "")).filter(Boolean);
+};
 
-/** Comma lists as chips; anything long or sentence-like stays plain text. */
-function chipsOf(text: string): string[] | null {
+const chipsOf = (text: string): string[] | null => {
   const parts = splitList(text);
   if (parts.length < 2 || parts.some((x) => x.length > 30)) {
     return null;
   }
   return parts;
-}
+};
 
-/** One skill: a title with a level bar, or its list as chips. Editable as text when selected. */
-function SkillRow({
+const SkillRow = ({
   group,
   index,
   item,
@@ -155,7 +147,7 @@ function SkillRow({
   group: string;
   index: number;
   item: SkillItem;
-}) {
+}) => {
   const ip = `${group}.items.${index}`;
   const expanded = useExpanded(ip);
   const level = levelOf(item.text);
@@ -164,7 +156,7 @@ function SkillRow({
   if (expanded || !(level !== null || chips)) {
     body = (
       <Show path={ip} value={item.text}>
-        <p className="text-[11px] text-white/75 leading-[1.45]">
+        <p className="text-[11px] leading-[1.45] text-white/75">
           <E
             multiline
             path={`${ip}.text`}
@@ -182,8 +174,8 @@ function SkillRow({
       <span className="mt-[3px] flex flex-wrap gap-[4px]">
         {chips.map((c, k) => (
           <span
-            className="rounded-[4px] bg-white/12 px-[6px] py-px text-[10.4px] text-white/90 leading-[1.5]"
-            // biome-ignore lint/suspicious/noArrayIndexKey: chips are plain strings; position is their identity
+            className="rounded-[4px] bg-white/12 px-[6px] py-px text-[10.4px] leading-[1.5] text-white/90"
+            // oxlint-disable-next-line react/no-array-index-key -- chips are plain strings; position is their identity
             key={k}
           >
             <Rich text={c} />
@@ -195,7 +187,7 @@ function SkillRow({
   return (
     <Sel label={m.cv_sel_skill()} list={`${group}.items`} path={ip}>
       <Show path={ip} value={item.title}>
-        <p className="font-medium text-[11.6px] text-white">
+        <p className="text-[11.6px] font-medium text-white">
           <E
             path={`${ip}.title`}
             placeholder={m.cv_ph_title()}
@@ -206,18 +198,16 @@ function SkillRow({
       {body}
     </Sel>
   );
-}
+};
 
-function SideTitle({ children }: { children: ReactNode }) {
-  return (
-    <h2 className="border-white/20 border-b pb-[4px] font-semibold text-[10.8px] text-white/65 uppercase tracking-[0.16em]">
-      {children}
-    </h2>
-  );
-}
+const SideTitle = ({ children }: { children: ReactNode }) => (
+  <h2 className="border-b border-white/20 pb-[4px] text-[10.8px] font-semibold tracking-[0.16em] text-white/65 uppercase">
+    {children}
+  </h2>
+);
 
-function skillBlocks(cv: CV): Block[] {
-  return cv.skills.map((s, i) => {
+const skillBlocks = (cv: CV): Block[] =>
+  cv.skills.map((s, i) => {
     const p = `skills.${i}`;
     return {
       key: s.id,
@@ -225,7 +215,7 @@ function skillBlocks(cv: CV): Block[] {
       node: (
         <Sel label={m.cv_sel_skill_group()} list="skills" path={p}>
           <Show path={p} value={s.name}>
-            <p className="mb-[6px] font-semibold text-[12px] text-white">
+            <p className="mb-[6px] text-[12px] font-semibold text-white">
               <E
                 path={`${p}.name`}
                 placeholder={m.cv_ph_group_name()}
@@ -242,54 +232,51 @@ function skillBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function languageBlocks(cv: CV): Block[] {
-  return [
-    {
-      key: "languages",
-      gap: 10,
-      node: (
-        <ul className="space-y-[6px]">
-          {cv.languages.map((l, i) => {
-            const level = levelOf(l.level);
-            return (
-              <Sel
-                as="li"
-                key={l.id}
-                label={m.cv_sel_language()}
-                list="languages"
-                path={`languages.${i}`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-[11.6px] text-white">
-                    <E
-                      path={`languages.${i}.name`}
-                      placeholder={m.cv_ph_language()}
-                      value={l.name}
-                    />
-                  </span>
-                  {level === null ? null : <Dots level={level} />}
-                </div>
-                <Show path={`languages.${i}`} value={l.level}>
-                  <p className="text-[10.6px] text-white/60">
-                    <E
-                      path={`languages.${i}.level`}
-                      placeholder={m.cv_ph_level()}
-                      value={l.level}
-                    />
-                  </p>
-                </Show>
-              </Sel>
-            );
-          })}
-        </ul>
-      ),
-    },
-  ];
-}
+const languageBlocks = (cv: CV): Block[] => [
+  {
+    key: "languages",
+    gap: 10,
+    node: (
+      <ul className="space-y-[6px]">
+        {cv.languages.map((l, i) => {
+          const level = levelOf(l.level);
+          return (
+            <Sel
+              as="li"
+              key={l.id}
+              label={m.cv_sel_language()}
+              list="languages"
+              path={`languages.${i}`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11.6px] font-medium text-white">
+                  <E
+                    path={`languages.${i}.name`}
+                    placeholder={m.cv_ph_language()}
+                    value={l.name}
+                  />
+                </span>
+                {level === null ? null : <Dots level={level} />}
+              </div>
+              <Show path={`languages.${i}`} value={l.level}>
+                <p className="text-[10.6px] text-white/60">
+                  <E
+                    path={`languages.${i}.level`}
+                    placeholder={m.cv_ph_level()}
+                    value={l.level}
+                  />
+                </p>
+              </Show>
+            </Sel>
+          );
+        })}
+      </ul>
+    ),
+  },
+];
 
-function Bullets({ list, items }: { list: string; items: string[] }) {
+const Bullets = ({ list, items }: { list: string; items: string[] }) => {
   if (items.length === 0) {
     return null;
   }
@@ -299,7 +286,7 @@ function Bullets({ list, items }: { list: string; items: string[] }) {
         <Sel
           as="li"
           className="relative pl-[13px]"
-          // biome-ignore lint/suspicious/noArrayIndexKey: bullets are plain strings; position is their identity
+          // oxlint-disable-next-line react/no-array-index-key -- bullets are plain strings; position is their identity
           key={j}
           label={m.cv_sel_bullet()}
           list={list}
@@ -316,28 +303,26 @@ function Bullets({ list, items }: { list: string; items: string[] }) {
       ))}
     </ul>
   );
-}
+};
 
-function Description({ p, value }: { p: string; value: string }) {
-  return (
-    <Show path={p} value={value}>
-      <p className="mt-[3px] text-[#3f3f46]">
-        <E
-          multiline
-          path={`${p}.description`}
-          placeholder={m.cv_ph_description()}
-          rich
-          value={value}
-        />
-      </p>
-    </Show>
-  );
-}
+const Description = ({ p, value }: { p: string; value: string }) => (
+  <Show path={p} value={value}>
+    <p className="mt-[3px] text-[#3f3f46]">
+      <E
+        multiline
+        path={`${p}.description`}
+        placeholder={m.cv_ph_description()}
+        rich
+        value={value}
+      />
+    </p>
+  </Show>
+);
 
 const DATES =
   "shrink-0 whitespace-nowrap text-right font-semibold text-[10.8px] text-[var(--cv-accent)] tabular-nums";
 
-function Head({
+const Head = ({
   title,
   sub,
   right,
@@ -345,19 +330,17 @@ function Head({
   title: ReactNode;
   sub?: ReactNode;
   right?: ReactNode;
-}) {
-  return (
-    <>
-      <div className="flex items-baseline justify-between gap-4">
-        <p className="min-w-0 font-bold text-[#18181b] text-[13px]">{title}</p>
-        {right}
-      </div>
-      {sub}
-    </>
-  );
-}
+}) => (
+  <>
+    <div className="flex items-baseline justify-between gap-4">
+      <p className="min-w-0 text-[13px] font-bold text-[#18181b]">{title}</p>
+      {right}
+    </div>
+    {sub}
+  </>
+);
 
-function Sub({
+const Sub = ({
   p,
   field,
   value,
@@ -369,30 +352,28 @@ function Sub({
   value: string;
   placeholder: string;
   location: string;
-}) {
-  return (
-    <Show path={p} value={value || location}>
-      <p className="text-[#71717a]">
-        <span className="font-medium text-[#3f3f46]">
-          <E path={`${p}.${field}`} placeholder={placeholder} value={value} />
+}) => (
+  <Show path={p} value={value || location}>
+    <p className="text-[#71717a]">
+      <span className="font-medium text-[#3f3f46]">
+        <E path={`${p}.${field}`} placeholder={placeholder} value={value} />
+      </span>
+      <Show path={p} value={location}>
+        <span>
+          {" · "}
+          <E
+            path={`${p}.location`}
+            placeholder={m.cv_ph_location()}
+            value={location}
+          />
         </span>
-        <Show path={p} value={location}>
-          <span>
-            {" · "}
-            <E
-              path={`${p}.location`}
-              placeholder={m.cv_ph_location()}
-              value={location}
-            />
-          </span>
-        </Show>
-      </p>
-    </Show>
-  );
-}
+      </Show>
+    </p>
+  </Show>
+);
 
-function experienceBlocks(cv: CV): Block[] {
-  return cv.experience.map((e, i) => {
+const experienceBlocks = (cv: CV): Block[] =>
+  cv.experience.map((e, i) => {
     const p = `experience.${i}`;
     return {
       key: e.id,
@@ -426,10 +407,9 @@ function experienceBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function educationBlocks(cv: CV): Block[] {
-  return cv.education.map((e, i) => {
+const educationBlocks = (cv: CV): Block[] =>
+  cv.education.map((e, i) => {
     const p = `education.${i}`;
     return {
       key: e.id,
@@ -462,10 +442,9 @@ function educationBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function projectBlocks(cv: CV): Block[] {
-  return cv.projects.map((pr, i) => {
+const projectBlocks = (cv: CV): Block[] =>
+  cv.projects.map((pr, i) => {
     const p = `projects.${i}`;
     return {
       key: pr.id,
@@ -498,10 +477,9 @@ function projectBlocks(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function customBlocks(section: CustomSection, list: string): Block[] {
-  return section.items.map((it, i) => {
+const customBlocks = (section: CustomSection, list: string): Block[] =>
+  section.items.map((it, i) => {
     const p = `${list}.items.${i}`;
     return {
       key: it.id,
@@ -543,7 +521,6 @@ function customBlocks(section: CustomSection, list: string): Block[] {
       ),
     };
   });
-}
 
 const MAIN_BLOCKS: Partial<Record<SectionKey, (cv: CV) => Block[]>> = {
   experience: experienceBlocks,
@@ -556,14 +533,12 @@ const SIDE_BLOCKS: Partial<Record<SectionKey, (cv: CV) => Block[]>> = {
   languages: languageBlocks,
 };
 
-function MainTitle({ children }: { children: ReactNode }) {
-  return (
-    <h2 className="flex items-center gap-[8px] font-bold text-[#18181b] text-[15px] tracking-[-0.01em]">
-      <span className="h-[14px] w-[4px] rounded-full bg-[var(--cv-accent)]" />
-      {children}
-    </h2>
-  );
-}
+const MainTitle = ({ children }: { children: ReactNode }) => (
+  <h2 className="flex items-center gap-[8px] text-[15px] font-bold tracking-[-0.01em] text-[#18181b]">
+    <span className="h-[14px] w-[4px] rounded-full bg-[var(--cv-accent)]" />
+    {children}
+  </h2>
+);
 
 /**
  * Infographic-lite: a deep-coloured side column with the photo, contact
@@ -595,7 +570,7 @@ export const skillbar: TemplateDef = {
         key: "header",
         node: (
           <Sel label={m.cv_sel_details()} path="basics">
-            <h1 className="font-bold text-[#18181b] text-[32px] leading-[1.08] tracking-[-0.025em]">
+            <h1 className="text-[32px] leading-[1.08] font-bold tracking-[-0.025em] text-[#18181b]">
               <E
                 path="basics.name"
                 placeholder={m.cv_ph_your_name()}
@@ -603,7 +578,7 @@ export const skillbar: TemplateDef = {
               />
             </h1>
             <Show path="basics" value={b.headline}>
-              <p className="mt-[6px] font-semibold text-[12px] text-[var(--cv-accent)] uppercase tracking-[0.12em]">
+              <p className="mt-[6px] text-[12px] font-semibold tracking-[0.12em] text-[var(--cv-accent)] uppercase">
                 <E
                   path="basics.headline"
                   placeholder={m.cv_ph_headline()}
@@ -657,7 +632,7 @@ export const skillbar: TemplateDef = {
       },
     ];
     for (const key of orderedSections(cv)) {
-      const inSide = !isCustomKey(key) && SIDE.includes(key);
+      const inSide = !isCustomKey(key) && SIDE.has(key);
       const blocks = sectionBlocks(
         cv,
         key,

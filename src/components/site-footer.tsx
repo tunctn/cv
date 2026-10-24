@@ -1,8 +1,8 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import { openCookieSettings } from "#/components/cookie-banner";
 
+import { openCookieSettings } from "#/components/cookie-banner";
 import { LanguageSelect } from "#/components/language-select";
 import { CONTACT_EMAIL } from "#/components/marketing/faq-copy";
 import { Logo } from "#/components/primitives";
@@ -17,8 +17,7 @@ import { m } from "#/paraglide/messages.js";
 const linkClass =
   "w-fit cursor-pointer text-[16px] text-muted-foreground transition-colors hover:text-foreground sm:text-[17px]";
 
-/** Footer for every page except the editor and the print route. */
-export function SiteFooter({ className }: { className?: string }) {
+export const SiteFooter = ({ className }: { className?: string }) => {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const openEditor = useCallback(async () => {
@@ -26,9 +25,9 @@ export function SiteFooter({ className }: { className?: string }) {
     try {
       const { id } = await startCv({});
       await navigate({ to: "/cv/$id", params: { id } });
-    } catch (e) {
-      if (!isGuestLimit(e)) {
-        toast.error((e as Error).message);
+    } catch (error) {
+      if (!isGuestLimit(error)) {
+        toast.error((error as Error).message);
       }
       setBusy(false);
     }
@@ -64,7 +63,7 @@ export function SiteFooter({ className }: { className?: string }) {
                 <a
                   className={linkClass}
                   href={REPO_URL}
-                  rel="noopener"
+                  rel="noopener noreferrer"
                   target="_blank"
                 >
                   {m.github_text()}
@@ -110,8 +109,8 @@ export function SiteFooter({ className }: { className?: string }) {
             <Logo />
           </Link>
         </div>
-        <div className="flex flex-col gap-5 border-border border-t py-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-[14px] text-muted-foreground">
+        <div className="border-border flex flex-col gap-5 border-t py-6 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-muted-foreground text-[14px]">
             © 2026 {BRAND.name}
           </p>
           <div className="flex items-center gap-3">
@@ -122,4 +121,4 @@ export function SiteFooter({ className }: { className?: string }) {
       </div>
     </footer>
   );
-}
+};

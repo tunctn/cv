@@ -1,5 +1,7 @@
 import { TextFontIcon, UndoIcon } from "@hugeicons-pro/core-stroke-rounded";
-import { type KeyboardEvent, useCallback, useState } from "react";
+import { useCallback, useState } from "react";
+import type { KeyboardEvent } from "react";
+
 import { Icon } from "#/components/icon";
 import { Button } from "#/components/ui/button";
 import {
@@ -9,7 +11,8 @@ import {
 } from "#/components/ui/popover";
 import { Slider } from "#/components/ui/slider";
 import type { TemplateStyle } from "#/lib/cv/engine";
-import { FONTS, type FontOption, fontFamily } from "#/lib/cv/fonts";
+import { FONTS, fontFamily } from "#/lib/cv/fonts";
+import type { FontOption } from "#/lib/cv/fonts";
 import type { CvStyle } from "#/lib/cv/schema";
 import { cn } from "#/lib/utils";
 import { m } from "#/paraglide/messages.js";
@@ -17,6 +20,7 @@ import { m } from "#/paraglide/messages.js";
 import { ResetField } from "./reset-field";
 
 type OnStyle = (patch: Partial<CvStyle>) => void;
+
 type NumberKey = "fontScale" | "lineHeight" | "letterSpacing" | "headingScale";
 
 /**
@@ -88,136 +92,7 @@ const RESET: Partial<CvStyle> = {
   headingWeight: undefined,
 };
 
-/** Font family plus size, leading, tracking and heading settings. */
-export function TypePopover({
-  base,
-  style,
-  onStyle,
-}: {
-  /** The template's own values, to tell which rows were changed. */
-  base: TemplateStyle;
-  style: TemplateStyle;
-  onStyle: OnStyle;
-}) {
-  const font = FONTS.find((f) => f.id === style.font) ?? FONTS[0];
-  const reset = useCallback(() => onStyle(RESET), [onStyle]);
-  const resetFont = useCallback(() => onStyle({ font: undefined }), [onStyle]);
-  const resetWeight = useCallback(
-    () => onStyle({ headingWeight: undefined }),
-    [onStyle]
-  );
-  return (
-    <Popover>
-      <PopoverTrigger
-        render={
-          <Button
-            aria-label={m.ed_typography_aria({ font: font.name })}
-            variant="ghost"
-          >
-            <Icon data-icon="inline-start" icon={TextFontIcon} />
-            <span style={{ fontFamily: font.family }}>{font.name}</span>
-          </Button>
-        }
-      />
-      <PopoverContent align="start" className="w-[340px] gap-0">
-        <div className="flex h-6 items-center gap-1">
-          <p className="font-medium text-[13px]">{m.ed_font()}</p>
-          <ResetField
-            label={m.ed_font_name()}
-            onReset={resetFont}
-            show={style.font !== base.font}
-          />
-        </div>
-        <div
-          aria-label={m.ed_font()}
-          className="mt-2 grid grid-cols-3 gap-1.5"
-          role="radiogroup"
-        >
-          {FONTS.map((f) => (
-            <FontTile
-              active={f.id === font.id}
-              font={f}
-              key={f.id}
-              onStyle={onStyle}
-            />
-          ))}
-        </div>
-        <div className="mt-5 flex items-center justify-between">
-          <p className="font-medium text-[13px]">{m.ed_text()}</p>
-          <button
-            className="-mr-1.5 inline-flex h-6 cursor-pointer items-center gap-1 rounded-md px-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
-            onClick={reset}
-            type="button"
-          >
-            <Icon className="size-3.5" icon={UndoIcon} /> {m.ed_reset()}
-          </button>
-        </div>
-        <div className="mt-3 grid gap-3.5">
-          <TypeSlider
-            base={base.fontScale}
-            onStyle={onStyle}
-            prop="fontScale"
-            value={style.fontScale}
-          />
-          <TypeSlider
-            base={base.lineHeight}
-            onStyle={onStyle}
-            prop="lineHeight"
-            value={style.lineHeight}
-          />
-          <TypeSlider
-            base={base.letterSpacing}
-            onStyle={onStyle}
-            prop="letterSpacing"
-            value={style.letterSpacing}
-          />
-        </div>
-        <p className="mt-5 font-medium text-[13px]">{m.ed_headings()}</p>
-        <div className="mt-3 grid gap-3.5">
-          <TypeSlider
-            base={base.headingScale}
-            onStyle={onStyle}
-            prop="headingScale"
-            value={style.headingScale}
-          />
-          <div className="grid grid-cols-[96px_1fr] items-center gap-2.5 text-[13px]">
-            <span className="flex items-center gap-1 whitespace-nowrap text-muted-foreground">
-              {m.ed_weight()}
-              <ResetField
-                label={m.ed_heading_weight_name()}
-                onReset={resetWeight}
-                show={style.headingWeight !== base.headingWeight}
-              />
-            </span>
-            <div
-              aria-label={m.ed_heading_weight()}
-              className="grid grid-cols-5 gap-0.5 rounded-[10px] bg-surface p-0.5"
-              role="radiogroup"
-            >
-              <WeightButton
-                active={style.headingWeight === undefined}
-                family={font.family}
-                onStyle={onStyle}
-              />
-              {WEIGHTS.map((w) => (
-                <WeightButton
-                  active={style.headingWeight === w.value}
-                  family={font.family}
-                  key={w.value}
-                  name={w.name()}
-                  onStyle={onStyle}
-                  weight={w.value}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function FontTile({
+const FontTile = ({
   font,
   active,
   onStyle,
@@ -225,35 +100,35 @@ function FontTile({
   font: FontOption;
   active: boolean;
   onStyle: OnStyle;
-}) {
+}) => {
   const pick = useCallback(() => onStyle({ font: font.id }), [font, onStyle]);
   return (
-    // biome-ignore lint/a11y/useSemanticElements: tiles with radio semantics
     <button
       aria-checked={active}
       className={cn(
-        "flex h-[62px] cursor-pointer flex-col items-center justify-center gap-1 rounded-[10px] outline-none transition-[background-color,box-shadow] focus-visible:ring-2 focus-visible:ring-foreground/20",
+        "focus-visible:ring-foreground/20 flex h-[62px] cursor-pointer flex-col items-center justify-center gap-1 rounded-[10px] transition-[background-color,box-shadow] outline-none focus-visible:ring-2",
         active
-          ? "bg-background ring-2 ring-foreground focus-visible:ring-foreground"
+          ? "bg-background ring-foreground focus-visible:ring-foreground ring-2"
           : "bg-surface hover:bg-surface-2"
       )}
       onClick={pick}
+      // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- tiles with radio semantics
       role="radio"
       style={{ fontFamily: fontFamily(font.id) }}
       type="button"
     >
       <span className="text-[20px] leading-none">
-        {/* biome-ignore lint/plugin: type specimen, not a word */}
+        {/* oxlint-disable-next-line i18n/jsx-text -- type specimen, not a word */}
         Aa
       </span>
-      <span className="max-w-full truncate px-0.5 text-[11px] text-muted-foreground leading-none">
+      <span className="text-muted-foreground max-w-full truncate px-0.5 text-[11px] leading-none">
         {font.name}
       </span>
     </button>
   );
-}
+};
 
-function WeightButton({
+const WeightButton = ({
   weight,
   name,
   family,
@@ -265,23 +140,23 @@ function WeightButton({
   family: string;
   active: boolean;
   onStyle: OnStyle;
-}) {
+}) => {
   const pick = useCallback(
     () => onStyle({ headingWeight: weight }),
     [weight, onStyle]
   );
   return (
-    // biome-ignore lint/a11y/useSemanticElements: segmented control with radio semantics
     <button
       aria-checked={active}
       aria-label={name ?? m.ed_template_default()}
       className={cn(
-        "h-7 cursor-pointer rounded-[8px] text-[13px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-foreground/20",
+        "focus-visible:ring-foreground/20 h-7 cursor-pointer rounded-[8px] text-[13px] transition-colors outline-none focus-visible:ring-2",
         active
-          ? "bg-background text-foreground shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1 ring-foreground/[0.06]"
+          ? "bg-background text-foreground ring-foreground/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1"
           : "text-muted-foreground hover:text-foreground"
       )}
       onClick={pick}
+      // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- segmented control with radio semantics
       role="radio"
       style={weight ? { fontFamily: family, fontWeight: weight } : undefined}
       title={name ?? m.ed_template_default()}
@@ -290,11 +165,11 @@ function WeightButton({
       {weight ? "Aa" : m.ed_auto()}
     </button>
   );
-}
+};
 
 const round = (n: number) => Math.round(n * 1000) / 1000;
 
-function TypeSlider({
+const TypeSlider = ({
   base,
   prop,
   value,
@@ -304,7 +179,7 @@ function TypeSlider({
   prop: NumberKey;
   value: number;
   onStyle: OnStyle;
-}) {
+}) => {
   const reset = useCallback(
     () => onStyle({ [prop]: undefined }),
     [prop, onStyle]
@@ -350,7 +225,7 @@ function TypeSlider({
 
   return (
     <div className="grid grid-cols-[96px_1fr_60px] items-center gap-2.5 text-[13px]">
-      <span className="flex items-center gap-1 whitespace-nowrap text-muted-foreground">
+      <span className="text-muted-foreground flex items-center gap-1 whitespace-nowrap">
         {r.label()}
         <ResetField
           label={r.resetName()}
@@ -366,10 +241,10 @@ function TypeSlider({
         step={r.step}
         value={[shown]}
       />
-      <label className="flex h-7 items-center justify-end gap-0.5 rounded-[8px] bg-surface pr-2 text-muted-foreground focus-within:ring-2 focus-within:ring-foreground/15">
+      <label className="bg-surface text-muted-foreground focus-within:ring-foreground/15 flex h-7 items-center justify-end gap-0.5 rounded-[8px] pr-2 focus-within:ring-2">
         <input
           aria-label={m.ed_in_percent({ name: (r.name ?? r.label)() })}
-          className="w-8 bg-transparent text-right text-foreground tabular-nums outline-none"
+          className="text-foreground w-8 bg-transparent text-right tabular-nums outline-none"
           inputMode="decimal"
           onBlur={commit}
           onChange={onInput}
@@ -380,4 +255,132 @@ function TypeSlider({
       </label>
     </div>
   );
-}
+};
+
+export const TypePopover = ({
+  base,
+  style,
+  onStyle,
+}: {
+  /** The template's own values, to tell which rows were changed. */
+  base: TemplateStyle;
+  style: TemplateStyle;
+  onStyle: OnStyle;
+}) => {
+  const font = FONTS.find((f) => f.id === style.font) ?? FONTS[0];
+  const reset = useCallback(() => onStyle(RESET), [onStyle]);
+  const resetFont = useCallback(() => onStyle({ font: undefined }), [onStyle]);
+  const resetWeight = useCallback(
+    () => onStyle({ headingWeight: undefined }),
+    [onStyle]
+  );
+  return (
+    <Popover>
+      <PopoverTrigger
+        render={
+          <Button
+            aria-label={m.ed_typography_aria({ font: font.name })}
+            variant="ghost"
+          >
+            <Icon data-icon="inline-start" icon={TextFontIcon} />
+            <span style={{ fontFamily: font.family }}>{font.name}</span>
+          </Button>
+        }
+      />
+      <PopoverContent align="start" className="w-[340px] gap-0">
+        <div className="flex h-6 items-center gap-1">
+          <p className="text-[13px] font-medium">{m.ed_font()}</p>
+          <ResetField
+            label={m.ed_font_name()}
+            onReset={resetFont}
+            show={style.font !== base.font}
+          />
+        </div>
+        <div
+          aria-label={m.ed_font()}
+          className="mt-2 grid grid-cols-3 gap-1.5"
+          role="radiogroup"
+        >
+          {FONTS.map((f) => (
+            <FontTile
+              active={f.id === font.id}
+              font={f}
+              key={f.id}
+              onStyle={onStyle}
+            />
+          ))}
+        </div>
+        <div className="mt-5 flex items-center justify-between">
+          <p className="text-[13px] font-medium">{m.ed_text()}</p>
+          <button
+            className="text-muted-foreground hover:bg-surface hover:text-foreground -mr-1.5 inline-flex h-6 cursor-pointer items-center gap-1 rounded-md px-1.5 text-[12px] transition-colors"
+            onClick={reset}
+            type="button"
+          >
+            <Icon className="size-3.5" icon={UndoIcon} /> {m.ed_reset()}
+          </button>
+        </div>
+        <div className="mt-3 grid gap-3.5">
+          <TypeSlider
+            base={base.fontScale}
+            onStyle={onStyle}
+            prop="fontScale"
+            value={style.fontScale}
+          />
+          <TypeSlider
+            base={base.lineHeight}
+            onStyle={onStyle}
+            prop="lineHeight"
+            value={style.lineHeight}
+          />
+          <TypeSlider
+            base={base.letterSpacing}
+            onStyle={onStyle}
+            prop="letterSpacing"
+            value={style.letterSpacing}
+          />
+        </div>
+        <p className="mt-5 text-[13px] font-medium">{m.ed_headings()}</p>
+        <div className="mt-3 grid gap-3.5">
+          <TypeSlider
+            base={base.headingScale}
+            onStyle={onStyle}
+            prop="headingScale"
+            value={style.headingScale}
+          />
+          <div className="grid grid-cols-[96px_1fr] items-center gap-2.5 text-[13px]">
+            <span className="text-muted-foreground flex items-center gap-1 whitespace-nowrap">
+              {m.ed_weight()}
+              <ResetField
+                label={m.ed_heading_weight_name()}
+                onReset={resetWeight}
+                show={style.headingWeight !== base.headingWeight}
+              />
+            </span>
+            <div
+              aria-label={m.ed_heading_weight()}
+              className="bg-surface grid grid-cols-5 gap-0.5 rounded-[10px] p-0.5"
+              role="radiogroup"
+            >
+              <WeightButton
+                active={style.headingWeight === undefined}
+                family={font.family}
+                onStyle={onStyle}
+              />
+              {WEIGHTS.map((w) => (
+                <WeightButton
+                  active={style.headingWeight === w.value}
+                  family={font.family}
+                  key={w.value}
+                  name={w.name()}
+                  onStyle={onStyle}
+                  weight={w.value}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};

@@ -18,8 +18,7 @@ const QUESTIONS = [
   [m.faq_q8, m.faq_a8],
 ] as const;
 
-/** Questions and answers in the given locale (current locale by default). */
-export function faqItems(locale?: Locale) {
+export const faqItems = (locale?: Locale) => {
   const options = locale ? { locale } : undefined;
   return [
     ...QUESTIONS.map(([q, a]) => ({
@@ -31,4 +30,4 @@ export function faqItems(locale?: Locale) {
       a: m.faq_a9({ email: CONTACT_EMAIL }, options),
     },
   ];
-}
+};

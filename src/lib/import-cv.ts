@@ -1,5 +1,6 @@
 import { track } from "#/lib/track";
 import { m } from "#/paraglide/messages.js";
+
 import { ATTACH_TYPES } from "./attachments";
 import { startCv } from "./start-cv";
 
@@ -14,19 +15,14 @@ export const IMPORT_ACCEPT = [
   ...new Set(Object.values(TYPES)),
 ].join(",");
 
-/** The file's type from its extension (browsers often leave .docx/.md untyped). */
-function mediaTypeOf(file: File) {
+const mediaTypeOf = (file: File) => {
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
   return (
     TYPES[ext] ?? (Object.values(TYPES).includes(file.type) ? file.type : null)
   );
-}
+};
 
-/**
- * Starts a new CV from an existing file: creates the CV, uploads the file to
- * it and returns where to go. The editor then hands the file to the AI.
- */
-export async function importCv(file: File) {
+export const importCv = async (file: File) => {
   const type = mediaTypeOf(file);
   const kind = file.name.split(".").pop()?.toLowerCase() || "unknown";
   track("import_started", { type: kind });
@@ -51,4 +47,4 @@ export async function importCv(file: File) {
   const { url } = (await res.json()) as { url: string };
   track("import_succeeded", { type: kind });
   return { id, search: { import: url, name: file.name, type } };
-}
+};

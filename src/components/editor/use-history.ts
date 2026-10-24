@@ -1,31 +1,31 @@
 import {
   useCallback,
   useEffect,
+  useEffectEvent,
   useMemo,
   useReducer,
-  useRef,
   useState,
 } from "react";
 
 import {
-  type CommitMeta,
   changedPaths,
   createTimeline,
   editGroup,
-  type Timeline,
-  type TimelineAction,
   timelineReducer,
-  type Version,
 } from "#/lib/cv/history";
-import { type CV, newId } from "#/lib/cv/schema";
+import type {
+  CommitMeta,
+  Timeline,
+  TimelineAction,
+  Version,
+} from "#/lib/cv/history";
+import { newId } from "#/lib/cv/schema";
+import type { CV } from "#/lib/cv/schema";
 import type { TemplateId } from "#/lib/cv/templates";
-import {
-  listVersions,
-  type StoredVersion,
-  saveVersion,
-} from "#/lib/cv/versions";
-
+import { listVersions, saveVersion } from "#/lib/cv/versions";
+import type { StoredVersion } from "#/lib/cv/versions";
 import { m } from "#/paraglide/messages.js";
+
 import { describeChange } from "./history-label";
 
 export interface Doc {
@@ -36,31 +36,21 @@ export interface Doc {
 /** How long after the last change a version is written to the database. */
 const PERSIST_MS = 900;
 
-function fromStored(v: StoredVersion): Version<Doc> {
-  return {
-    id: v.id,
-    at: v.at,
-    label: v.label,
-    source: v.source,
-    doc: { cv: v.cv, template: v.template as TemplateId },
-  };
-}
+const fromStored = (v: StoredVersion): Version<Doc> => ({
+  id: v.id,
+  at: v.at,
+  label: v.label,
+  source: v.source,
+  doc: { cv: v.cv, template: v.template as TemplateId },
+});
 
-function sameDoc(a: Doc, b: Doc) {
-  return (
-    a.template === b.template && JSON.stringify(a.cv) === JSON.stringify(b.cv)
-  );
-}
+const sameDoc = (a: Doc, b: Doc) =>
+  a.template === b.template && JSON.stringify(a.cv) === JSON.stringify(b.cv);
 
-/**
- * Versions from the database and where the CV on screen sits among them.
- * After an undo the newest versions are "ahead" (redo); reloading keeps
- * that, so undo/redo behave exactly as before the reload.
- */
-function seed(
+const seed = (
   current: Doc,
   stored: StoredVersion[]
-): { versions: Version<Doc>[]; cursor: number } {
+): { versions: Version<Doc>[]; cursor: number } => {
   const versions = stored.map(fromStored);
   if (versions.length === 0) {
     return {
@@ -94,27 +84,23 @@ function seed(
     doc: current,
   });
   return { versions, cursor: versions.length - 1 };
-}
+};
 
-function describeEdit(prev: Doc, next: Doc): CommitMeta {
+const describeEdit = (prev: Doc, next: Doc): CommitMeta => {
   const paths = changedPaths(prev, next);
   return {
     label: describeChange(prev, next, paths),
     source: "you",
     group: editGroup(paths, prev, next),
   };
-}
+};
 
-/**
- * The editor's document with undo/redo over a timeline that is also stored
- * in Postgres, so history survives reloads and shows in the History tab.
- */
-export function useHistory(
+export const useHistory = (
   cvId: string,
   initial: Doc,
   stored: StoredVersion[],
   moreStored: boolean
-) {
+) => {
   const [timeline, dispatch] = useReducer(
     timelineReducer as (
       s: Timeline<Doc>,
@@ -161,20 +147,22 @@ export function useHistory(
 
   // Write versions whose content changed since they were last saved.
   // Versions loaded from the database count as saved.
-  const [saved] = useState(() => {
+  const [saved, setSaved] = useState(() => {
     const ids = new Set(stored.map((v) => v.id));
     return new Map(
       timeline.versions.filter((v) => ids.has(v.id)).map((v) => [v.id, v.doc])
     );
   });
-  const pending = useRef<Version<Doc>[]>([]);
-  pending.current = timeline.versions.filter((v) => saved.get(v.id) !== v.doc);
+  const pending = useMemo(
+    () => timeline.versions.filter((v) => saved.get(v.id) !== v.doc),
+    [saved, timeline.versions]
+  );
   const persist = useCallback(async () => {
-    for (const v of pending.current) {
+    for (const v of pending) {
       const docAtSend = v.doc;
       try {
         // One at a time and in order, so an older version never lands last.
-        // biome-ignore lint/performance/noAwaitInLoops: sequential on purpose
+        // oxlint-disable-next-line no-await-in-loop -- sequential on purpose
         await saveVersion({
           data: {
             cvId,
@@ -186,38 +174,43 @@ export function useHistory(
             data: v.doc.cv,
           },
         });
-        saved.set(v.id, docAtSend);
+        setSaved((prev) => new Map(prev).set(v.id, docAtSend));
       } catch {
         // Kept pending; the next change retries.
       }
     }
-  }, [cvId, saved]);
-  const versionsKey = timeline.versions
-    .map((v) => `${v.id}:${saved.get(v.id) === v.doc ? 1 : 0}`)
-    .join();
-  // biome-ignore lint/correctness/useExhaustiveDependencies: runs when any version's content changes
+  }, [cvId, pending]);
+  const persistLater = useEffectEvent(() => {
+    persist();
+  });
+  // Runs when a version becomes unsaved, not on every keystroke.
+  const pendingKey = pending.map((v) => v.id).join(",");
   useEffect(() => {
-    if (pending.current.length === 0) {
+    if (pendingKey === "") {
       return;
     }
-    const t = setTimeout(persist, PERSIST_MS);
+    const t = setTimeout(persistLater, PERSIST_MS);
     return () => clearTimeout(t);
-  }, [versionsKey, persist]);
+  }, [pendingKey]);
 
-  const hasOlder = useRef(moreStored);
+  const [hasOlder, setHasOlder] = useState(moreStored);
   const loadOlder = useCallback(async () => {
     const [first] = timeline.versions;
-    if (!hasOlder.current) {
+    if (!hasOlder) {
       return;
     }
     const page = await listVersions({ data: { cvId, before: first.at } });
-    hasOlder.current = page.more;
+    setHasOlder(page.more);
     const older = page.versions.map(fromStored);
-    for (const v of older) {
-      saved.set(v.id, v.doc);
-    }
+    setSaved((prev) => {
+      const next = new Map(prev);
+      for (const v of older) {
+        next.set(v.id, v.doc);
+      }
+      return next;
+    });
     dispatch({ type: "prepend", versions: older });
-  }, [cvId, saved, timeline.versions]);
+  }, [cvId, hasOlder, timeline.versions]);
 
   return useMemo(
     () => ({
@@ -229,12 +222,23 @@ export function useHistory(
       seal,
       persist,
       loadOlder,
-      hasOlder: hasOlder.current,
+      hasOlder,
       versions: timeline.versions,
       cursor: timeline.cursor,
       canUndo: timeline.cursor > 0,
       canRedo: timeline.cursor < timeline.versions.length - 1,
     }),
-    [doc, commit, undo, redo, jump, seal, persist, loadOlder, timeline]
+    [
+      doc,
+      commit,
+      undo,
+      redo,
+      jump,
+      seal,
+      persist,
+      loadOlder,
+      hasOlder,
+      timeline,
+    ]
   );
-}
+};

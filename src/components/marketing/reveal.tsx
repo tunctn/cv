@@ -1,14 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+
 import { cn } from "#/lib/utils";
 
 type RevealState = "idle" | "armed" | "shown";
 
-/**
- * Fades a block up once when it scrolls into view. Server HTML is always
- * visible; only blocks that start below the fold are hidden (after
- * hydration, so no flash), then revealed by an IntersectionObserver.
- */
-export function Reveal({
+export const Reveal = ({
   children,
   className,
   delay = 0,
@@ -17,7 +13,7 @@ export function Reveal({
   className?: string;
   /** Stagger offset in ms, for items revealed together. */
   delay?: number;
-}) {
+}) => {
   const ref = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<RevealState>("idle");
 
@@ -53,4 +49,4 @@ export function Reveal({
       {children}
     </div>
   );
-}
+};

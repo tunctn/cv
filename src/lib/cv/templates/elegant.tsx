@@ -1,5 +1,6 @@
 import { E, Sel } from "#/components/cv/editing";
 import { m } from "#/paraglide/messages.js";
+
 import type { Block, TemplateDef } from "../engine";
 import type { CV } from "../schema";
 import {
@@ -15,56 +16,54 @@ import {
   Description,
   EntryDates,
   EntryLocation,
-  type EntryModel,
   EntryText,
   sectionStream,
 } from "./parts";
+import type { EntryModel } from "./parts";
 
-function entry(e: EntryModel, i: number): Block {
-  return {
-    key: e.id,
-    gap: i === 0 ? 14 : 22,
-    node: (
-      <Sel label={e.label} list={e.list} path={e.p}>
-        <div className="flex items-baseline justify-between gap-6">
-          <p className="min-w-0 text-[#1c1c1c] text-[15px] leading-[1.35]">
-            <EntryText e={e} which="title" />
-          </p>
-          <p className="shrink-0 text-[#8a8a8a] text-[12px] italic">
-            <EntryDates e={e} />
-          </p>
-        </div>
-        <p className="mt-[2px] text-[11.6px] text-[var(--cv-accent)] uppercase tracking-[0.12em]">
-          <EntryText e={e} which="sub" />
-          <EntryLocation
-            before={
-              e.sub?.value ? <span className="text-[#bbb]"> · </span> : null
-            }
-            className="text-[#999]"
-            e={e}
-          />
+const entry = (e: EntryModel, i: number): Block => ({
+  key: e.id,
+  gap: i === 0 ? 14 : 22,
+  node: (
+    <Sel label={e.label} list={e.list} path={e.p}>
+      <div className="flex items-baseline justify-between gap-6">
+        <p className="min-w-0 text-[15px] leading-[1.35] text-[#1c1c1c]">
+          <EntryText e={e} which="title" />
         </p>
-        <Description
-          className="mt-2 text-[#3a3a3a]"
-          p={e.p}
-          value={e.description}
-        />
-        <Bullets
-          className="mt-1.5 space-y-[3px]"
-          itemClassName="relative pl-5"
-          items={e.highlights ?? []}
-          list={`${e.p}.highlights`}
-          marker={
-            <span className="absolute top-[0.72em] left-[2px] h-px w-[9px] bg-[var(--cv-accent)]" />
+        <p className="shrink-0 text-[12px] text-[#8a8a8a] italic">
+          <EntryDates e={e} />
+        </p>
+      </div>
+      <p className="mt-[2px] text-[11.6px] tracking-[0.12em] text-[var(--cv-accent)] uppercase">
+        <EntryText e={e} which="sub" />
+        <EntryLocation
+          before={
+            e.sub?.value ? <span className="text-[#bbb]"> · </span> : null
           }
+          className="text-[#999]"
+          e={e}
         />
-      </Sel>
-    ),
-  };
-}
+      </p>
+      <Description
+        className="mt-2 text-[#3a3a3a]"
+        p={e.p}
+        value={e.description}
+      />
+      <Bullets
+        className="mt-1.5 space-y-[3px]"
+        itemClassName="relative pl-5"
+        items={e.highlights ?? []}
+        list={`${e.p}.highlights`}
+        marker={
+          <span className="absolute top-[0.72em] left-[2px] h-px w-[9px] bg-[var(--cv-accent)]" />
+        }
+      />
+    </Sel>
+  ),
+});
 
-function skills(cv: CV): Block[] {
-  return cv.skills.map((s, i) => {
+const skills = (cv: CV): Block[] =>
+  cv.skills.map((s, i) => {
     const p = `skills.${i}`;
     return {
       key: s.id,
@@ -101,23 +100,20 @@ function skills(cv: CV): Block[] {
       ),
     };
   });
-}
 
-function languages(cv: CV): Block[] {
-  return [
-    {
-      key: "languages",
-      gap: 14,
-      node: (
-        <InlineLanguages
-          cv={cv}
-          levelClassName="italic text-[#777]"
-          separator={<span className="mx-3 text-[#ccc]">·</span>}
-        />
-      ),
-    },
-  ];
-}
+const languages = (cv: CV): Block[] => [
+  {
+    key: "languages",
+    gap: 14,
+    node: (
+      <InlineLanguages
+        cv={cv}
+        levelClassName="italic text-[#777]"
+        separator={<span className="mx-3 text-[#ccc]">·</span>}
+      />
+    ),
+  },
+];
 
 /** Refined serif CV: a large display name, hairline rules and plenty of space. */
 export const elegant: TemplateDef = {
@@ -145,7 +141,7 @@ export const elegant: TemplateDef = {
             path="basics"
           >
             <div className="min-w-0">
-              <h1 className="text-[#161616] text-[42px] leading-[1.05] tracking-[-0.015em]">
+              <h1 className="text-[42px] leading-[1.05] tracking-[-0.015em] text-[#161616]">
                 <E
                   path="basics.name"
                   placeholder={m.cv_ph_your_name()}
@@ -153,7 +149,7 @@ export const elegant: TemplateDef = {
                 />
               </h1>
               <Show path="basics" value={b.headline}>
-                <p className="mt-2 text-[12px] text-[var(--cv-accent)] uppercase tracking-[0.2em]">
+                <p className="mt-2 text-[12px] tracking-[0.2em] text-[var(--cv-accent)] uppercase">
                   <E
                     path="basics.headline"
                     placeholder={m.cv_ph_headline()}
@@ -163,7 +159,7 @@ export const elegant: TemplateDef = {
               </Show>
             </div>
             <Contacts
-              className="shrink-0 space-y-[1px] text-right text-[#666] text-[11.6px]"
+              className="shrink-0 space-y-[1px] text-right text-[11.6px] text-[#666]"
               cv={cv}
               itemClassName="block"
             />
@@ -177,7 +173,7 @@ export const elegant: TemplateDef = {
         gap: 30,
         node: (
           <Sel label={m.cv_sel_profile()} path="basics.summary">
-            <p className="border-[#e4ddd3] border-t pt-5 text-[#333] text-[14px] italic leading-[1.6]">
+            <p className="border-t border-[#e4ddd3] pt-5 text-[14px] leading-[1.6] text-[#333] italic">
               <E
                 multiline
                 path="basics.summary"
@@ -202,7 +198,7 @@ export const elegant: TemplateDef = {
               list="sections"
               path={`sections.${key}`}
             >
-              <h2 className="flex items-center gap-4 text-[13px] text-[var(--cv-accent)] uppercase tracking-[0.22em]">
+              <h2 className="flex items-center gap-4 text-[13px] tracking-[0.22em] text-[var(--cv-accent)] uppercase">
                 <E placeholder={m.cv_ph_section()} {...sectionLabel(cv, key)} />
                 <span className="h-px flex-1 bg-[#e4ddd3]" />
               </h2>

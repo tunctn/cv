@@ -1,0 +1,116 @@
+{
+  "language": "zh",
+  "basics": {
+    "name": "林雨桐",
+    "headline": "资深产品设计师",
+    "email": "yutong.lin@icloud.com",
+    "phone": "",
+    "location": "中国上海",
+    "website": "",
+    "summary": "拥有八年经验的产品设计师，负责过面向消费者和 B2B 的软件交付。我擅长把复杂问题梳理成冷静、易用的界面，并与工程团队紧密合作推动落地。",
+    "photo": "",
+    "links": []
+  },
+  "style": {},
+  "labels": {
+    "profile": "个人简介",
+    "experience": "工作经历",
+    "education": "教育经历",
+    "skills": "技能",
+    "projects": "项目",
+    "languages": "语言"
+  },
+  "experience": [
+    {
+      "id": "exp1",
+      "company": "支付宝",
+      "role": "资深产品设计师",
+      "location": "中国杭州",
+      "start": "2021年3月",
+      "end": "至今",
+      "meta": "杭州，全职",
+      "description": "负责储蓄和预算功能的主设计师，与两个工程小队合作。主要成果：",
+      "highlights": [
+        "**储蓄罐重设计：** 主导新储蓄罐体验的研究与设计，使每周存入金额提升了18%。",
+        "**设计系统：** 搭建了首个共享组件库，目前已有40+位设计师在使用。",
+        "**指导带教：** 辅导4位设计师完成晋升。"
+      ]
+    },
+    {
+      "id": "exp2",
+      "company": "美团",
+      "role": "产品设计师",
+      "location": "中国上海",
+      "start": "2018年6月",
+      "end": "2021年2月",
+      "meta": "上海，全职",
+      "description": "",
+      "highlights": [
+        "负责骑手端 App 的新手引导流程，将流失率降低了三分之一。",
+        "每周与来自三个城市的骑手开展可用性测试。"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "id": "edu1",
+      "school": "中国美术学院",
+      "degree": "艺术学学士（视觉传达设计）",
+      "location": "中国杭州",
+      "start": "2013年9月",
+      "end": "2016年6月",
+      "meta": "",
+      "description": "字体设计、交互设计、设计研究。"
+    }
+  ],
+  "skills": [
+    {
+      "id": "skl1",
+      "name": "专业技能",
+      "columns": 2,
+      "items": [
+        {
+          "id": "ski1",
+          "title": "产品设计",
+          "text": "用户调研、交互设计、原型设计"
+        },
+        {
+          "id": "ski2",
+          "title": "设计系统",
+          "text": "组件库、设计令牌、文档规范"
+        },
+        {
+          "id": "ski3",
+          "title": "研究",
+          "text": "可用性测试、访谈、信息整合"
+        },
+        {
+          "id": "ski4",
+          "title": "工具",
+          "text": "Figma, Framer, HTML & CSS"
+        }
+      ]
+    },
+    {
+      "id": "skl2",
+      "name": "个人技能",
+      "columns": 1,
+      "items": [
+        {
+          "id": "ski5",
+          "title": "语言",
+          "text": "中文（母语），英语（流利），日语（基础）"
+        },
+        {
+          "id": "ski6",
+          "title": "团队合作",
+          "text": "压力下沉稳，沟通清晰，乐于带教"
+        }
+      ]
+    }
+  ],
+  "projects": [],
+  "languages": [],
+  "custom": [],
+  "sectionOrder": ["experience", "education", "skills", "projects", "languages"]
+}

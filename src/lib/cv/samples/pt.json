@@ -1,0 +1,116 @@
+{
+  "language": "pt",
+  "basics": {
+    "name": "Nora Almeida",
+    "headline": "Senior Product Designer",
+    "email": "nora@almeida.design",
+    "phone": "",
+    "location": "São Paulo, Brasil",
+    "website": "",
+    "summary": "Product designer com oito anos de experiência entregando software para consumidores e B2B. Transformo problemas complexos em interfaces claras e fáceis de usar, trabalhando de perto com engenharia para colocá-las no ar.",
+    "photo": "",
+    "links": []
+  },
+  "style": {},
+  "labels": {
+    "profile": "Perfil",
+    "experience": "Experiência",
+    "education": "Formação",
+    "skills": "Habilidades",
+    "projects": "Projetos",
+    "languages": "Idiomas"
+  },
+  "experience": [
+    {
+      "id": "exp1",
+      "company": "Nubank",
+      "role": "Senior Product Designer",
+      "location": "São Paulo, Brasil",
+      "start": "Mar 2021",
+      "end": "Atual",
+      "meta": "São Paulo, Tempo integral",
+      "description": "Designer líder de produtos de poupança e orçamento, trabalhando com duas squads de engenharia. Principais resultados:",
+      "highlights": [
+        "**Redesign dos cofrinhos:** Liderei a pesquisa e o design da nova experiência de cofrinhos, aumentando os depósitos semanais em 18%.",
+        "**Design system:** Criei a primeira biblioteca compartilhada de componentes, hoje usada por mais de 40 designers.",
+        "**Mentoria:** Acompanhei quatro designers no processo de promoção."
+      ]
+    },
+    {
+      "id": "exp2",
+      "company": "iFood",
+      "role": "Product Designer",
+      "location": "São Paulo, Brasil",
+      "start": "Jun 2018",
+      "end": "Fev 2021",
+      "meta": "São Paulo, Tempo integral",
+      "description": "",
+      "highlights": [
+        "Fiquei responsável pelo fluxo de onboarding do app de entregadores e reduzi a desistência em um terço.",
+        "Conduzi sessões semanais de usabilidade com entregadores em três cidades."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "id": "edu1",
+      "school": "Faculdade de Belas Artes de São Paulo",
+      "degree": "Bacharelado em Design Gráfico",
+      "location": "São Paulo, Brasil",
+      "start": "Set 2013",
+      "end": "Jun 2016",
+      "meta": "",
+      "description": "Tipografia, design de interação, pesquisa em design."
+    }
+  ],
+  "skills": [
+    {
+      "id": "skl1",
+      "name": "Competências profissionais",
+      "columns": 2,
+      "items": [
+        {
+          "id": "ski1",
+          "title": "Product design",
+          "text": "Discovery, interaction design, prototyping"
+        },
+        {
+          "id": "ski2",
+          "title": "Design systems",
+          "text": "Component libraries, tokens, documentation"
+        },
+        {
+          "id": "ski3",
+          "title": "Research",
+          "text": "Usability testing, interviews, synthesis"
+        },
+        {
+          "id": "ski4",
+          "title": "Tools",
+          "text": "Figma, Framer, HTML & CSS"
+        }
+      ]
+    },
+    {
+      "id": "skl2",
+      "name": "Competências pessoais",
+      "columns": 1,
+      "items": [
+        {
+          "id": "ski5",
+          "title": "Idiomas",
+          "text": "Português (nativo), Inglês (conversação), Espanhol (conversação)"
+        },
+        {
+          "id": "ski6",
+          "title": "Trabalho em equipe",
+          "text": "Calma sob pressão, comunicação clara, gosto por mentorar"
+        }
+      ]
+    }
+  ],
+  "projects": [],
+  "languages": [],
+  "custom": [],
+  "sectionOrder": ["experience", "education", "skills", "projects", "languages"]
+}

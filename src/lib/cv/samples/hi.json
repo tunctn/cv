@@ -1,0 +1,116 @@
+{
+  "language": "hi",
+  "basics": {
+    "name": "आद्या शर्मा",
+    "headline": "सीनियर प्रोडक्ट डिज़ाइनर",
+    "email": "aadya@sharma.design",
+    "phone": "",
+    "location": "बेंगलुरु, भारत",
+    "website": "",
+    "summary": "आठ वर्षों के अनुभव वाली प्रोडक्ट डिज़ाइनर, जो कंज़्यूमर और B2B सॉफ़्टवेयर को शिप करती हैं। मैं जटिल समस्याओं को शांत, उपयोगी इंटरफेस में बदलती हूँ और इंजीनियरिंग के साथ मिलकर उन्हें रिलीज़ कराती हूँ।",
+    "photo": "",
+    "links": []
+  },
+  "style": {},
+  "labels": {
+    "profile": "प्रोफ़ाइल",
+    "experience": "अनुभव",
+    "education": "शिक्षा",
+    "skills": "कौशल",
+    "projects": "प्रोजेक्ट",
+    "languages": "भाषाएँ"
+  },
+  "experience": [
+    {
+      "id": "exp1",
+      "company": "PhonePe",
+      "role": "सीनियर प्रोडक्ट डिज़ाइनर",
+      "location": "बेंगलुरु, भारत",
+      "start": "मार्च 2021",
+      "end": "वर्तमान",
+      "meta": "बेंगलुरु, फुल-टाइम",
+      "description": "सेविंग्स और बजटिंग के लिए लीड डिज़ाइनर, दो इंजीनियरिंग स्क्वाड्स के साथ काम किया। मुख्य परिणाम:",
+      "highlights": [
+        "**Savings pots redesign:** नए पॉट्स अनुभव के लिए रिसर्च और डिज़ाइन का नेतृत्व किया, जिससे साप्ताहिक जमा 18% बढ़े।",
+        "**Design system:** पहला साझा कंपोनेंट लाइब्रेरी बनाया, जिसका अब 40+ डिज़ाइनर उपयोग करते हैं।",
+        "**Mentoring:** चार डिज़ाइनरों को प्रमोशन तक कोच किया।"
+      ]
+    },
+    {
+      "id": "exp2",
+      "company": "Swiggy",
+      "role": "Product Designer",
+      "location": "बेंगलुरु, भारत",
+      "start": "जून 2018",
+      "end": "फरवरी 2021",
+      "meta": "बेंगलुरु, फुल-टाइम",
+      "description": "",
+      "highlights": [
+        "राइडर ऐप के ऑनबोर्डिंग फ्लो की ज़िम्मेदारी संभाली और drop-off एक तिहाई कम किया।",
+        "तीन शहरों के राइडर्स के साथ साप्ताहिक usability sessions चलाए।"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "id": "edu1",
+      "school": "National Institute of Design",
+      "degree": "Bachelor of Design in Graphic Design",
+      "location": "अहमदाबाद, भारत",
+      "start": "सितंबर 2013",
+      "end": "जून 2016",
+      "meta": "",
+      "description": "टाइपोग्राफी, interaction design, design research."
+    }
+  ],
+  "skills": [
+    {
+      "id": "skl1",
+      "name": "Professional skills",
+      "columns": 2,
+      "items": [
+        {
+          "id": "ski1",
+          "title": "Product design",
+          "text": "Discovery, interaction design, prototyping"
+        },
+        {
+          "id": "ski2",
+          "title": "Design systems",
+          "text": "Component libraries, tokens, documentation"
+        },
+        {
+          "id": "ski3",
+          "title": "Research",
+          "text": "Usability testing, interviews, synthesis"
+        },
+        {
+          "id": "ski4",
+          "title": "Tools",
+          "text": "Figma, Framer, HTML & CSS"
+        }
+      ]
+    },
+    {
+      "id": "skl2",
+      "name": "Personal skills",
+      "columns": 1,
+      "items": [
+        {
+          "id": "ski5",
+          "title": "Languages",
+          "text": "Hindi (native), English, Spanish (conversational)"
+        },
+        {
+          "id": "ski6",
+          "title": "Teamwork",
+          "text": "Calm under pressure, clear communicator, enjoys mentoring"
+        }
+      ]
+    }
+  ],
+  "projects": [],
+  "languages": [],
+  "custom": [],
+  "sectionOrder": ["experience", "education", "skills", "projects", "languages"]
+}

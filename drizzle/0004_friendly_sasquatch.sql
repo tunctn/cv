@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "ai_messages" integer DEFAULT 0 NOT NULL;

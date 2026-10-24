@@ -1,0 +1,116 @@
+{
+  "language": "en",
+  "basics": {
+    "name": "Nora Whitfield",
+    "headline": "Senior Product Designer",
+    "email": "nora@whitfield.design",
+    "phone": "",
+    "location": "London, UK",
+    "website": "",
+    "summary": "Product designer with eight years of experience shipping consumer and B2B software. I turn messy problems into calm, usable interfaces and work closely with engineering to get them out the door.",
+    "photo": "",
+    "links": []
+  },
+  "style": {},
+  "labels": {
+    "profile": "Profile",
+    "experience": "Experience",
+    "education": "Education",
+    "skills": "Skills",
+    "projects": "Projects",
+    "languages": "Languages"
+  },
+  "experience": [
+    {
+      "id": "exp1",
+      "company": "Monzo",
+      "role": "Senior Product Designer",
+      "location": "London, UK",
+      "start": "Mar 2021",
+      "end": "Present",
+      "meta": "London, Full-time",
+      "description": "Lead designer for savings and budgeting, working with two engineering squads. Key results:",
+      "highlights": [
+        "**Savings pots redesign:** Led research and design of the new pots experience, lifting weekly deposits by 18%.",
+        "**Design system:** Built the first shared component library, now used by 40+ designers.",
+        "**Mentoring:** Coached four designers through promotion."
+      ]
+    },
+    {
+      "id": "exp2",
+      "company": "Deliveroo",
+      "role": "Product Designer",
+      "location": "London, UK",
+      "start": "Jun 2018",
+      "end": "Feb 2021",
+      "meta": "London, Full-time",
+      "description": "",
+      "highlights": [
+        "Owned the rider app onboarding flow and cut drop-off by a third.",
+        "Ran weekly usability sessions with riders across three cities."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "id": "edu1",
+      "school": "University of the Arts London",
+      "degree": "BA Graphic Communication Design",
+      "location": "London, UK",
+      "start": "Sep 2013",
+      "end": "Jun 2016",
+      "meta": "",
+      "description": "Typography, interaction design, design research."
+    }
+  ],
+  "skills": [
+    {
+      "id": "skl1",
+      "name": "Professional skills",
+      "columns": 2,
+      "items": [
+        {
+          "id": "ski1",
+          "title": "Product design",
+          "text": "Discovery, interaction design, prototyping"
+        },
+        {
+          "id": "ski2",
+          "title": "Design systems",
+          "text": "Component libraries, tokens, documentation"
+        },
+        {
+          "id": "ski3",
+          "title": "Research",
+          "text": "Usability testing, interviews, synthesis"
+        },
+        {
+          "id": "ski4",
+          "title": "Tools",
+          "text": "Figma, Framer, HTML & CSS"
+        }
+      ]
+    },
+    {
+      "id": "skl2",
+      "name": "Personal skills",
+      "columns": 1,
+      "items": [
+        {
+          "id": "ski5",
+          "title": "Languages",
+          "text": "English (native), Spanish (conversational)"
+        },
+        {
+          "id": "ski6",
+          "title": "Teamwork",
+          "text": "Calm under pressure, clear communicator, enjoys mentoring"
+        }
+      ]
+    }
+  ],
+  "projects": [],
+  "languages": [],
+  "custom": [],
+  "sectionOrder": ["experience", "education", "skills", "projects", "languages"]
+}

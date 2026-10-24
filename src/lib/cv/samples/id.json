@@ -1,0 +1,116 @@
+{
+  "language": "id",
+  "basics": {
+    "name": "Nadia Pratama",
+    "headline": "Senior Product Designer",
+    "email": "nadia@pratama.design",
+    "phone": "",
+    "location": "Jakarta, Indonesia",
+    "website": "",
+    "summary": "Product designer dengan delapan tahun pengalaman mengembangkan software konsumen dan B2B. Saya mengubah masalah yang berantakan menjadi antarmuka yang tenang dan mudah digunakan, serta bekerja dekat dengan engineering untuk mewujudkannya.",
+    "photo": "",
+    "links": []
+  },
+  "style": {},
+  "labels": {
+    "profile": "Profil",
+    "experience": "Pengalaman",
+    "education": "Pendidikan",
+    "skills": "Keahlian",
+    "projects": "Proyek",
+    "languages": "Bahasa"
+  },
+  "experience": [
+    {
+      "id": "exp1",
+      "company": "Jenius",
+      "role": "Senior Product Designer",
+      "location": "Jakarta, Indonesia",
+      "start": "Mar 2021",
+      "end": "Sekarang",
+      "meta": "Jakarta, Full-time",
+      "description": "Lead designer untuk tabungan dan budgeting, bekerja dengan dua squad engineering. Hasil utama:",
+      "highlights": [
+        "**Redesain tabungan:** Memimpin riset dan desain pengalaman tabungan baru, meningkatkan setoran mingguan sebesar 18%.",
+        "**Design system:** Membangun library komponen bersama pertama, kini digunakan oleh 40+ desainer.",
+        "**Mentoring:** Membimbing empat desainer sampai promosi."
+      ]
+    },
+    {
+      "id": "exp2",
+      "company": "Gojek",
+      "role": "Product Designer",
+      "location": "Jakarta, Indonesia",
+      "start": "Jun 2018",
+      "end": "Feb 2021",
+      "meta": "Jakarta, Full-time",
+      "description": "",
+      "highlights": [
+        "Memegang flow onboarding aplikasi mitra pengemudi dan menurunkan drop-off sebesar sepertiga.",
+        "Menjalankan sesi usability mingguan dengan mitra pengemudi di tiga kota."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "id": "edu1",
+      "school": "Institut Kesenian Jakarta",
+      "degree": "S1 Desain Komunikasi Visual",
+      "location": "Jakarta, Indonesia",
+      "start": "Sep 2013",
+      "end": "Jun 2016",
+      "meta": "",
+      "description": "Tipografi, desain interaksi, riset desain."
+    }
+  ],
+  "skills": [
+    {
+      "id": "skl1",
+      "name": "Professional skills",
+      "columns": 2,
+      "items": [
+        {
+          "id": "ski1",
+          "title": "Product design",
+          "text": "Discovery, interaction design, prototyping"
+        },
+        {
+          "id": "ski2",
+          "title": "Design systems",
+          "text": "Component libraries, tokens, documentation"
+        },
+        {
+          "id": "ski3",
+          "title": "Research",
+          "text": "Usability testing, interviews, synthesis"
+        },
+        {
+          "id": "ski4",
+          "title": "Tools",
+          "text": "Figma, Framer, HTML & CSS"
+        }
+      ]
+    },
+    {
+      "id": "skl2",
+      "name": "Personal skills",
+      "columns": 1,
+      "items": [
+        {
+          "id": "ski5",
+          "title": "Languages",
+          "text": "Bahasa Indonesia (native), English (conversational)"
+        },
+        {
+          "id": "ski6",
+          "title": "Teamwork",
+          "text": "Tenang di bawah tekanan, komunikatif, senang mentoring"
+        }
+      ]
+    }
+  ],
+  "projects": [],
+  "languages": [],
+  "custom": [],
+  "sectionOrder": ["experience", "education", "skills", "projects", "languages"]
+}

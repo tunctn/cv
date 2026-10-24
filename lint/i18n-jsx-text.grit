@@ -1,0 +1,6 @@
+language js
+
+JsxText() as $text where {
+  $text <: r"(?s).*\p{L}.*",
+  register_diagnostic(span=$text, message="Untranslated text in JSX. Move it to messages/en.json and render m.key() from #/paraglide/messages.js.", severity="error")
+}

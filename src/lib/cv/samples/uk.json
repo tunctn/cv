@@ -1,0 +1,116 @@
+{
+  "language": "uk",
+  "basics": {
+    "name": "Олена Шевченко",
+    "headline": "Senior Product Designer",
+    "email": "olena@shevchenko.design",
+    "phone": "",
+    "location": "Київ, Україна",
+    "website": "",
+    "summary": "Product designer with eight years of experience shipping consumer and B2B software. I turn messy problems into calm, usable interfaces and work closely with engineering to get them out the door.",
+    "photo": "",
+    "links": []
+  },
+  "style": {},
+  "labels": {
+    "profile": "Профіль",
+    "experience": "Досвід",
+    "education": "Освіта",
+    "skills": "Навички",
+    "projects": "Проєкти",
+    "languages": "Мови"
+  },
+  "experience": [
+    {
+      "id": "exp1",
+      "company": "monobank",
+      "role": "Senior Product Designer",
+      "location": "Київ, Україна",
+      "start": "Бер 2021",
+      "end": "Тепер",
+      "meta": "Київ, Full-time",
+      "description": "Lead designer for savings and budgeting, working with two engineering squads. Key results:",
+      "highlights": [
+        "**Savings pots redesign:** Led research and design of the new pots experience, lifting weekly deposits by 18%.",
+        "**Design system:** Built the first shared component library, now used by 40+ designers.",
+        "**Mentoring:** Coached four designers through promotion."
+      ]
+    },
+    {
+      "id": "exp2",
+      "company": "Glovo",
+      "role": "Product Designer",
+      "location": "Київ, Україна",
+      "start": "Чер 2018",
+      "end": "Лют 2021",
+      "meta": "Київ, Full-time",
+      "description": "",
+      "highlights": [
+        "Owned the rider app onboarding flow and cut drop-off by a third.",
+        "Ran weekly usability sessions with riders across three cities."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "id": "edu1",
+      "school": "Київський національний університет технологій та дизайну",
+      "degree": "бакалавр графічного дизайну",
+      "location": "Київ, Україна",
+      "start": "Вер 2013",
+      "end": "Чер 2016",
+      "meta": "",
+      "description": "Typography, interaction design, design research."
+    }
+  ],
+  "skills": [
+    {
+      "id": "skl1",
+      "name": "Professional skills",
+      "columns": 2,
+      "items": [
+        {
+          "id": "ski1",
+          "title": "Product design",
+          "text": "Discovery, interaction design, prototyping"
+        },
+        {
+          "id": "ski2",
+          "title": "Design systems",
+          "text": "Component libraries, tokens, documentation"
+        },
+        {
+          "id": "ski3",
+          "title": "Research",
+          "text": "Usability testing, interviews, synthesis"
+        },
+        {
+          "id": "ski4",
+          "title": "Tools",
+          "text": "Figma, Framer, HTML & CSS"
+        }
+      ]
+    },
+    {
+      "id": "skl2",
+      "name": "Personal skills",
+      "columns": 1,
+      "items": [
+        {
+          "id": "ski5",
+          "title": "Languages",
+          "text": "Ukrainian (native), English (conversational), Polish (conversational)"
+        },
+        {
+          "id": "ski6",
+          "title": "Teamwork",
+          "text": "Calm under pressure, clear communicator, enjoys mentoring"
+        }
+      ]
+    }
+  ],
+  "projects": [],
+  "languages": [],
+  "custom": [],
+  "sectionOrder": ["experience", "education", "skills", "projects", "languages"]
+}

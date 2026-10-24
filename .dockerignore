@@ -1,0 +1,10 @@
+node_modules
+.output
+.nitro
+.tanstack
+tmp
+.env*
+.git
+src/paraglide
+project.inlang/cache
+project.inlang/.lix

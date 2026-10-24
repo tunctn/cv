@@ -1,0 +1,116 @@
+{
+  "language": "tr",
+  "basics": {
+    "name": "Elif Yılmaz",
+    "headline": "Kıdemli Ürün Tasarımcısı",
+    "email": "elif@yilmaz.design",
+    "phone": "",
+    "location": "İstanbul, Türkiye",
+    "website": "",
+    "summary": "Tüketici ve B2B yazılımlarında sekiz yıllık deneyime sahip ürün tasarımcısı. Dağınık sorunları sakin, kullanılabilir arayüzlere dönüştürür ve ürünleri hayata geçirmek için mühendislik ekibiyle yakın çalışırım.",
+    "photo": "",
+    "links": []
+  },
+  "style": {},
+  "labels": {
+    "profile": "Profil",
+    "experience": "Deneyim",
+    "education": "Eğitim",
+    "skills": "Yetenekler",
+    "projects": "Projeler",
+    "languages": "Diller"
+  },
+  "experience": [
+    {
+      "id": "exp1",
+      "company": "iyzico",
+      "role": "Kıdemli Ürün Tasarımcısı",
+      "location": "İstanbul, Türkiye",
+      "start": "Mar 2021",
+      "end": "Halen",
+      "meta": "İstanbul, Tam zamanlı",
+      "description": "Tasarruf ve bütçe yönetimi için lider tasarımcı; iki mühendislik ekibiyle birlikte çalıştı. Öne çıkan sonuçlar:",
+      "highlights": [
+        "**Tasarruf kasaları yenilemesi:** Yeni kasa deneyimi için araştırma ve tasarımı yönetti, haftalık yatırımları %18 artırdı.",
+        "**Tasarım sistemi:** İlk ortak bileşen kütüphanesini oluşturdu, şimdi 40+ tasarımcı tarafından kullanılıyor.",
+        "**Mentorluk:** Dört tasarımcının terfi sürecinde koçluk yaptı."
+      ]
+    },
+    {
+      "id": "exp2",
+      "company": "Getir",
+      "role": "Ürün Tasarımcısı",
+      "location": "İstanbul, Türkiye",
+      "start": "Haz 2018",
+      "end": "Şub 2021",
+      "meta": "İstanbul, Tam zamanlı",
+      "description": "",
+      "highlights": [
+        "Kurye uygulamasının onboarding akışını sahiplenip terk oranını üçte bir azalttı.",
+        "Üç şehirde kuryelerle haftalık kullanılabilirlik oturumları yürüttü."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "id": "edu1",
+      "school": "Mimar Sinan Güzel Sanatlar Üniversitesi",
+      "degree": "Görsel İletişim Tasarımı Lisans",
+      "location": "İstanbul, Türkiye",
+      "start": "Eyl 2013",
+      "end": "Haz 2016",
+      "meta": "",
+      "description": "Tipografi, etkileşim tasarımı, tasarım araştırması."
+    }
+  ],
+  "skills": [
+    {
+      "id": "skl1",
+      "name": "Profesyonel beceriler",
+      "columns": 2,
+      "items": [
+        {
+          "id": "ski1",
+          "title": "Ürün tasarımı",
+          "text": "Keşif, etkileşim tasarımı, prototipleme"
+        },
+        {
+          "id": "ski2",
+          "title": "Tasarım sistemleri",
+          "text": "Bileşen kütüphaneleri, token'lar, dokümantasyon"
+        },
+        {
+          "id": "ski3",
+          "title": "Araştırma",
+          "text": "Kullanılabilirlik testleri, görüşmeler, sentez"
+        },
+        {
+          "id": "ski4",
+          "title": "Araçlar",
+          "text": "Figma, Framer, HTML & CSS"
+        }
+      ]
+    },
+    {
+      "id": "skl2",
+      "name": "Kişisel beceriler",
+      "columns": 1,
+      "items": [
+        {
+          "id": "ski5",
+          "title": "Diller",
+          "text": "Türkçe (ana dil), İngilizce (akıcı), İspanyolca (orta seviye)"
+        },
+        {
+          "id": "ski6",
+          "title": "Takım çalışması",
+          "text": "Baskı altında sakin, net iletişim kurar, mentorluktan keyif alır"
+        }
+      ]
+    }
+  ],
+  "projects": [],
+  "languages": [],
+  "custom": [],
+  "sectionOrder": ["experience", "education", "skills", "projects", "languages"]
+}

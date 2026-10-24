@@ -1,0 +1,116 @@
+{
+  "language": "de",
+  "basics": {
+    "name": "Nora Schäfer",
+    "headline": "Senior Product Designer",
+    "email": "nora@schaefer.design",
+    "phone": "",
+    "location": "Berlin, Deutschland",
+    "website": "",
+    "summary": "Produktdesignerin mit acht Jahren Erfahrung in Consumer- und B2B-Software. Ich bringe komplexe Probleme in ruhige, nutzerfreundliche Oberflächen und arbeite eng mit Engineering zusammen, um sie live zu bringen.",
+    "photo": "",
+    "links": []
+  },
+  "style": {},
+  "labels": {
+    "profile": "Profil",
+    "experience": "Berufserfahrung",
+    "education": "Ausbildung",
+    "skills": "Kenntnisse",
+    "projects": "Projekte",
+    "languages": "Sprachen"
+  },
+  "experience": [
+    {
+      "id": "exp1",
+      "company": "N26",
+      "role": "Senior Product Designer",
+      "location": "Berlin, Deutschland",
+      "start": "Mär 2021",
+      "end": "Heute",
+      "meta": "Berlin, Vollzeit",
+      "description": "Lead Designerin für Sparen und Budgetplanung, im Team mit zwei Engineering-Squads. Wichtige Ergebnisse:",
+      "highlights": [
+        "**Spar-Topf-Redesign:** Forschung und Design des neuen Topf-Erlebnisses geleitet, wöchentliche Einzahlungen um 18% gesteigert.",
+        "**Designsystem:** Die erste gemeinsame Komponentenbibliothek aufgebaut, heute von 40+ Designerinnen und Designern genutzt.",
+        "**Mentoring:** Vier Designerinnen und Designer bis zur Beförderung begleitet."
+      ]
+    },
+    {
+      "id": "exp2",
+      "company": "Flaschenpost",
+      "role": "Product Designer",
+      "location": "Berlin, Deutschland",
+      "start": "Jun 2018",
+      "end": "Feb 2021",
+      "meta": "Berlin, Vollzeit",
+      "description": "",
+      "highlights": [
+        "Den Onboarding-Flow der Fahrer-App verantwortet und den Drop-off um ein Drittel reduziert.",
+        "Wöchentliche Usability-Sessions mit Fahrern in drei Städten durchgeführt."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "id": "edu1",
+      "school": "Universität der Künste Berlin",
+      "degree": "B.A. Kommunikationsdesign",
+      "location": "Berlin, Deutschland",
+      "start": "Sep 2013",
+      "end": "Jun 2016",
+      "meta": "",
+      "description": "Typografie, Interaktionsdesign, Designforschung."
+    }
+  ],
+  "skills": [
+    {
+      "id": "skl1",
+      "name": "Fachliche Kompetenzen",
+      "columns": 2,
+      "items": [
+        {
+          "id": "ski1",
+          "title": "Produktdesign",
+          "text": "Discovery, Interaktionsdesign, Prototyping"
+        },
+        {
+          "id": "ski2",
+          "title": "Designsysteme",
+          "text": "Komponentenbibliotheken, Tokens, Dokumentation"
+        },
+        {
+          "id": "ski3",
+          "title": "Forschung",
+          "text": "Usability-Tests, Interviews, Synthese"
+        },
+        {
+          "id": "ski4",
+          "title": "Tools",
+          "text": "Figma, Framer, HTML & CSS"
+        }
+      ]
+    },
+    {
+      "id": "skl2",
+      "name": "Persönliche Kompetenzen",
+      "columns": 1,
+      "items": [
+        {
+          "id": "ski5",
+          "title": "Sprachen",
+          "text": "Deutsch (Muttersprache), Englisch (verhandlungssicher), Französisch (konversationssicher)"
+        },
+        {
+          "id": "ski6",
+          "title": "Teamarbeit",
+          "text": "Ruhig unter Druck, klare Kommunikation, Freude am Mentoring"
+        }
+      ]
+    }
+  ],
+  "projects": [],
+  "languages": [],
+  "custom": [],
+  "sectionOrder": ["experience", "education", "skills", "projects", "languages"]
+}

@@ -1,0 +1,116 @@
+{
+  "language": "vi",
+  "basics": {
+    "name": "Nguyễn Minh Anh",
+    "headline": "Senior Product Designer",
+    "email": "minhanh@nguyen.design",
+    "phone": "",
+    "location": "Hà Nội, Việt Nam",
+    "website": "",
+    "summary": "Nhà thiết kế sản phẩm với tám năm kinh nghiệm triển khai phần mềm cho người dùng cá nhân và doanh nghiệp. Tôi biến những vấn đề rối rắm thành giao diện gọn gàng, dễ dùng và làm việc chặt chẽ với đội kỹ thuật để đưa sản phẩm ra mắt.",
+    "photo": "",
+    "links": []
+  },
+  "style": {},
+  "labels": {
+    "profile": "Hồ sơ",
+    "experience": "Kinh nghiệm",
+    "education": "Học vấn",
+    "skills": "Kỹ năng",
+    "projects": "Dự án",
+    "languages": "Ngôn ngữ"
+  },
+  "experience": [
+    {
+      "id": "exp1",
+      "company": "MoMo",
+      "role": "Senior Product Designer",
+      "location": "Hà Nội, Việt Nam",
+      "start": "T3 2021",
+      "end": "Hiện tại",
+      "meta": "Hà Nội, Toàn thời gian",
+      "description": "Thiết kế chính cho tính năng tiết kiệm và quản lý chi tiêu, làm việc với hai squad kỹ thuật. Kết quả chính:",
+      "highlights": [
+        "**Thiết kế lại hũ tiết kiệm:** Dẫn dắt nghiên cứu và thiết kế trải nghiệm hũ mới, tăng tiền gửi hàng tuần lên 18%.",
+        "**Hệ thống thiết kế:** Xây dựng thư viện component dùng chung đầu tiên, hiện được hơn 40 nhà thiết kế sử dụng.",
+        "**Mentoring:** Hướng dẫn bốn nhà thiết kế trong quá trình thăng tiến."
+      ]
+    },
+    {
+      "id": "exp2",
+      "company": "Grab",
+      "role": "Product Designer",
+      "location": "Hồ Chí Minh, Việt Nam",
+      "start": "T6 2018",
+      "end": "T2 2021",
+      "meta": "Hồ Chí Minh, Toàn thời gian",
+      "description": "",
+      "highlights": [
+        "Phụ trách luồng onboarding của ứng dụng tài xế và giảm tỷ lệ rơi rụng xuống còn 2/3.",
+        "Tổ chức các buổi kiểm thử khả dụng hằng tuần với tài xế ở ba thành phố."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "id": "edu1",
+      "school": "Trường Đại học Mỹ thuật Công nghiệp Hà Nội",
+      "degree": "Cử nhân Thiết kế Đồ họa",
+      "location": "Hà Nội, Việt Nam",
+      "start": "T9 2013",
+      "end": "T6 2016",
+      "meta": "",
+      "description": "Nghiên cứu kiểu chữ, thiết kế tương tác, nghiên cứu thiết kế."
+    }
+  ],
+  "skills": [
+    {
+      "id": "skl1",
+      "name": "Kỹ năng chuyên môn",
+      "columns": 2,
+      "items": [
+        {
+          "id": "ski1",
+          "title": "Thiết kế sản phẩm",
+          "text": "Discovery, interaction design, prototyping"
+        },
+        {
+          "id": "ski2",
+          "title": "Hệ thống thiết kế",
+          "text": "Component libraries, tokens, documentation"
+        },
+        {
+          "id": "ski3",
+          "title": "Nghiên cứu",
+          "text": "Usability testing, interviews, synthesis"
+        },
+        {
+          "id": "ski4",
+          "title": "Công cụ",
+          "text": "Figma, Framer, HTML & CSS"
+        }
+      ]
+    },
+    {
+      "id": "skl2",
+      "name": "Kỹ năng cá nhân",
+      "columns": 1,
+      "items": [
+        {
+          "id": "ski5",
+          "title": "Ngôn ngữ",
+          "text": "Tiếng Việt (bản ngữ), tiếng Anh, tiếng Nhật"
+        },
+        {
+          "id": "ski6",
+          "title": "Làm việc nhóm",
+          "text": "Bình tĩnh dưới áp lực, giao tiếp rõ ràng, thích mentoring"
+        }
+      ]
+    }
+  ],
+  "projects": [],
+  "languages": [],
+  "custom": [],
+  "sectionOrder": ["experience", "education", "skills", "projects", "languages"]
+}

@@ -1,0 +1,348 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "./styles/scroll.css";
+@import "./styles/marketing.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/source-serif-4/400-italic.css";
+@import "@fontsource/source-serif-4/600-italic.css";
+@import "@fontsource/lora/400-italic.css";
+@import "@fontsource/lora/600-italic.css";
+@import "@fontsource/inter/400-italic.css";
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-sans/700.css";
+@import "@fontsource/dm-sans/400.css";
+@import "@fontsource/dm-sans/500.css";
+@import "@fontsource/dm-sans/600.css";
+@import "@fontsource/dm-sans/700.css";
+@import "@fontsource/source-serif-4/400.css";
+@import "@fontsource/source-serif-4/600.css";
+@import "@fontsource/source-serif-4/700.css";
+@import "@fontsource/lora/400.css";
+@import "@fontsource/lora/500.css";
+@import "@fontsource/lora/600.css";
+@import "@fontsource/lora/700.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-mono/600.css";
+@import "@fontsource/ibm-plex-mono/700.css";
+@import "@fontsource-variable/jetbrains-mono";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Mobbin-like: white canvas, near-black ink, soft grey surfaces, pill buttons. */
+:root {
+  --radius: 0.875rem;
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+  --card: #ffffff;
+  --card-foreground: #0a0a0a;
+  --popover: #ffffff;
+  --popover-foreground: #0a0a0a;
+  --primary: #0a0a0a;
+  --primary-foreground: #ffffff;
+  --secondary: #f2f2f2;
+  --secondary-foreground: #0a0a0a;
+  --muted: #f2f2f2;
+  --muted-foreground: #737373;
+  --accent: #f2f2f2;
+  --accent-foreground: #0a0a0a;
+  --destructive: #e5484d;
+  --border: #ebebeb;
+  --input: #e5e5e5;
+  --ring: #0a0a0a;
+  --surface: #f4f4f4;
+  --surface-2: #ececec;
+  --canvas-dot: #d9d9d9;
+}
+
+/* Dark: near-black canvas, soft charcoal surfaces. CV sheets stay white (paper). */
+.dark {
+  --background: #0b0b0b;
+  --foreground: #f4f4f4;
+  --card: #121212;
+  --card-foreground: #f4f4f4;
+  --popover: #141414;
+  --popover-foreground: #f4f4f4;
+  --primary: #f4f4f4;
+  --primary-foreground: #0b0b0b;
+  --secondary: #1d1d1d;
+  --secondary-foreground: #f4f4f4;
+  --muted: #1d1d1d;
+  --muted-foreground: #9a9a9a;
+  --accent: #1d1d1d;
+  --accent-foreground: #f4f4f4;
+  --destructive: #ff6369;
+  --border: #242424;
+  --input: #2b2b2b;
+  --ring: #f4f4f4;
+  --surface: #161616;
+  --surface-2: #1f1f1f;
+  --canvas-dot: #2c2c2c;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Source Serif 4", ui-serif, Georgia, serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: calc(var(--radius) - 2px);
+  --radius-xl: calc(var(--radius) + 2px);
+  --radius-2xl: calc(var(--radius) + 6px);
+  --radius-3xl: calc(var(--radius) + 12px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Every clickable thing shows the pointer, not just links. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="menuitem"],
+  [role="option"],
+  [role="tab"],
+  select,
+  summary,
+  label:has(input, [role="switch"]) {
+    cursor: pointer;
+  }
+  body {
+    @apply bg-background font-sans text-foreground;
+  }
+}
+
+@page {
+  size: A4;
+}
+
+/* CV editor: hover/selection outlines, drag handles, drop markers, empty-field placeholders.
+   Outlines never change layout, so the editor paginates exactly like the PDF. */
+.cv-ph:empty::before {
+  color: #b8b8b8;
+  content: attr(data-placeholder);
+}
+.cv-ph:empty {
+  display: inline-block;
+  min-width: 1ch;
+}
+.cv-field {
+  cursor: text;
+  outline: none;
+  border-radius: 2px;
+}
+.cv-field:focus {
+  background: color-mix(in oklch, #3d63dd 8%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in oklch, #3d63dd 8%, transparent);
+}
+.cv-sel {
+  outline: 1px solid transparent;
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+.cv-sel:hover {
+  outline-color: color-mix(in oklch, #3d63dd 35%, transparent);
+}
+.cv-sel:has(.cv-sel:hover) {
+  outline-color: transparent;
+}
+.cv-sel[data-selected] {
+  outline: 1.5px solid #3d63dd;
+}
+.cv-sel[data-dragging] {
+  opacity: 0.35;
+}
+.cv-handle {
+  position: absolute;
+  top: 0;
+  left: -22px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 20px;
+  color: #9a9a9a;
+  cursor: grab;
+  background: white;
+  border-radius: 4px;
+}
+.cv-handle svg {
+  width: 14px;
+  height: 14px;
+}
+.cv-sel:hover > .cv-handle,
+.cv-sel[data-selected] > .cv-handle {
+  display: flex;
+}
+.cv-sel:has(.cv-sel:hover) > .cv-handle {
+  display: none;
+}
+.cv-handle:hover {
+  color: #0a0a0a;
+  background: #f2f2f2;
+}
+.cv-drop {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 2px;
+  pointer-events: none;
+  background: #3d63dd;
+  border-radius: 2px;
+}
+.cv-photo img,
+.cv-photo span {
+  transition: opacity 120ms;
+}
+.cv-photo:hover img {
+  opacity: 0.85;
+}
+
+/* Motion. Outlines stay instant (they change constantly); occasional surfaces ease in. */
+:root {
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+}
+.cv-toolbar {
+  transform-origin: bottom left;
+  transition:
+    opacity 160ms var(--ease-out-expo),
+    transform 160ms var(--ease-out-expo);
+}
+@starting-style {
+  .cv-toolbar {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+  }
+}
+.cv-drop {
+  transition:
+    opacity 120ms ease-out,
+    transform 120ms var(--ease-out-expo);
+}
+@starting-style {
+  .cv-drop {
+    opacity: 0;
+    transform: scaleX(0.6);
+  }
+}
+.cv-clip-hint {
+  transition:
+    opacity 200ms var(--ease-out-expo),
+    transform 200ms var(--ease-out-expo);
+}
+@starting-style {
+  .cv-clip-hint {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cv-toolbar,
+  .cv-drop,
+  .cv-clip-hint {
+    transition: opacity 150ms ease;
+  }
+  @starting-style {
+    .cv-toolbar,
+    .cv-drop {
+      transform: none;
+    }
+    .cv-clip-hint {
+      transform: translate(-50%, 0);
+    }
+  }
+}
+
+/* Content that only exists after hydration fades in instead of popping. */
+@keyframes cv-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+.cv-fade-in {
+  animation: cv-fade-in 200ms ease-out both;
+}
+
+/*
+ * Typography settings on CV sheets. The attributes are only present when a
+ * setting differs from the template, so default CVs render untouched (see
+ * typeAttrs in lib/cv/engine.ts). Tailwind v4 keeps each utility's value in
+ * --tw-leading / --tw-tracking, which these scale or offset.
+ */
+[data-cv-lh],
+[data-cv-lh] [class*="leading-"] {
+  line-height: calc(var(--tw-leading, 1.5) * var(--cv-lh));
+}
+[data-cv-ls] {
+  letter-spacing: var(--cv-ls);
+}
+[data-cv-ls] [class*="tracking-"] {
+  letter-spacing: calc(var(--tw-tracking, 0em) + var(--cv-ls));
+}
+[data-cv-hw] :is(h1, h2) {
+  font-weight: var(--cv-hw);
+}
+[data-cv-hs] :is(h1, h2) {
+  zoom: var(--cv-hs);
+}
+
+/*
+ * Right-to-left text on CV sheets. The sheet layout stays left to right, but
+ * every text block takes its direction from its own first strong letter, so
+ * Arabic or Hebrew lines read and align right to left (text-align is "start")
+ * while Latin text is unaffected. Only block boxes get the rule (on an inline
+ * box it would isolate the text from its line); spans that are flex or grid
+ * items are blocks too, e.g. bullet text next to its dot. Bidi reordering
+ * never changes line breaks, so measured heights and page breaks stay put.
+ */
+.cv-sheet :is(p, li, h1, h2, h3, dt, dd),
+.cv-sheet div:not(.inline, .inline-block, .inline-flex),
+.cv-sheet :is(.flex, .grid) > span {
+  unicode-bidi: plaintext;
+}
+
+/* Sign-up gate: the usage meter fills once when the dialog opens. */
+@keyframes gate-fill {
+  from {
+    transform: scaleX(0.6);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-\[gate-fill_600ms_cubic-bezier\(0\.19\,1\,0\.22\,1\)\] {
+    animation: none;
+  }
+}

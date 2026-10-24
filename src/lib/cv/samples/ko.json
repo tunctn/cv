@@ -1,0 +1,116 @@
+{
+  "language": "ko",
+  "basics": {
+    "name": "김나연",
+    "headline": "시니어 프로덕트 디자이너",
+    "email": "nayeon@kimdesign.kr",
+    "phone": "",
+    "location": "서울, 대한민국",
+    "website": "",
+    "summary": "소비자용 및 B2B 소프트웨어를 8년간 설계해 온 프로덕트 디자이너입니다. 복잡한 문제를 차분하고 쓰기 쉬운 인터페이스로 풀어내며, 엔지니어링과 긴밀히 협업해 실제 출시로 연결합니다.",
+    "photo": "",
+    "links": []
+  },
+  "style": {},
+  "labels": {
+    "profile": "프로필",
+    "experience": "경력",
+    "education": "학력",
+    "skills": "기술",
+    "projects": "프로젝트",
+    "languages": "언어"
+  },
+  "experience": [
+    {
+      "id": "exp1",
+      "company": "토스",
+      "role": "시니어 프로덕트 디자이너",
+      "location": "서울, 대한민국",
+      "start": "2021년 3월",
+      "end": "현재",
+      "meta": "서울, 정규직",
+      "description": "저축 및 예산 관리 기능의 리드 디자이너로서 두 개의 엔지니어링 스쿼드와 함께 일했습니다. 주요 성과:",
+      "highlights": [
+        "**저축 목표함 리디자인:** 새 목표함 경험의 리서치와 디자인을 주도해 주간 입금액을 18% 높였습니다.",
+        "**디자인 시스템:** 첫 공용 컴포넌트 라이브러리를 구축해 현재 40명+ 디자이너가 사용하고 있습니다.",
+        "**멘토링:** 네 명의 디자이너가 승진할 수 있도록 코칭했습니다."
+      ]
+    },
+    {
+      "id": "exp2",
+      "company": "배달의민족",
+      "role": "프로덕트 디자이너",
+      "location": "서울, 대한민국",
+      "start": "2018년 6월",
+      "end": "2021년 2월",
+      "meta": "서울, 정규직",
+      "description": "",
+      "highlights": [
+        "라이더 앱 온보딩 플로우를 담당해 이탈률을 3분의 1로 줄였습니다.",
+        "3개 도시의 라이더와 함께 매주 사용성 세션을 진행했습니다."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "id": "edu1",
+      "school": "서울시립대학교 디자인전문대학원",
+      "degree": "학사 그래픽커뮤니케이션디자인",
+      "location": "서울, 대한민국",
+      "start": "2013년 9월",
+      "end": "2016년 6월",
+      "meta": "",
+      "description": "타이포그래피, 인터랙션 디자인, 디자인 리서치."
+    }
+  ],
+  "skills": [
+    {
+      "id": "skl1",
+      "name": "전문 역량",
+      "columns": 2,
+      "items": [
+        {
+          "id": "ski1",
+          "title": "프로덕트 디자인",
+          "text": "발견, 인터랙션 디자인, 프로토타이핑"
+        },
+        {
+          "id": "ski2",
+          "title": "디자인 시스템",
+          "text": "컴포넌트 라이브러리, 토큰, 문서화"
+        },
+        {
+          "id": "ski3",
+          "title": "리서치",
+          "text": "사용성 테스트, 인터뷰, 인사이트 도출"
+        },
+        {
+          "id": "ski4",
+          "title": "도구",
+          "text": "Figma, Framer, HTML & CSS"
+        }
+      ]
+    },
+    {
+      "id": "skl2",
+      "name": "개인 역량",
+      "columns": 1,
+      "items": [
+        {
+          "id": "ski5",
+          "title": "언어",
+          "text": "한국어 (원어민), 영어 (회화 가능), 일본어 (기초)"
+        },
+        {
+          "id": "ski6",
+          "title": "팀워크",
+          "text": "압박 상황에서도 침착함, 명확한 의사소통, 멘토링을 즐김"
+        }
+      ]
+    }
+  ],
+  "projects": [],
+  "languages": [],
+  "custom": [],
+  "sectionOrder": ["experience", "education", "skills", "projects", "languages"]
+}

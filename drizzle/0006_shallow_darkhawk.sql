@@ -1,0 +1,1 @@
+ALTER TABLE "cv" ADD COLUMN "pages" integer DEFAULT 1 NOT NULL;

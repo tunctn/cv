@@ -1,0 +1,116 @@
+{
+  "language": "nl",
+  "basics": {
+    "name": "Nora de Vries",
+    "headline": "Senior Product Designer",
+    "email": "nora@devries.design",
+    "phone": "",
+    "location": "Amsterdam, Nederland",
+    "website": "",
+    "summary": "Product designer met acht jaar ervaring in het ontwikkelen van consumer- en B2B-software. Ik vertaal rommelige problemen naar rustige, gebruiksvriendelijke interfaces en werk nauw samen met engineering om ze live te krijgen.",
+    "photo": "",
+    "links": []
+  },
+  "style": {},
+  "labels": {
+    "profile": "Profiel",
+    "experience": "Werkervaring",
+    "education": "Opleiding",
+    "skills": "Vaardigheden",
+    "projects": "Projecten",
+    "languages": "Talen"
+  },
+  "experience": [
+    {
+      "id": "exp1",
+      "company": "bunq",
+      "role": "Senior Product Designer",
+      "location": "Amsterdam, Nederland",
+      "start": "mrt 2021",
+      "end": "heden",
+      "meta": "Amsterdam, Fulltime",
+      "description": "Lead designer voor sparen en budgetteren, samenwerkend met twee engineering squads. Belangrijkste resultaten:",
+      "highlights": [
+        "**Herontwerp spaarpotjes:** Onderzoek en design geleid voor de nieuwe spaarpotjes-ervaring, waardoor wekelijkse stortingen met 18% stegen.",
+        "**Designsystemen:** De eerste gedeelde component library gebouwd, nu gebruikt door 40+ designers.",
+        "**Mentoring:** Vier designers begeleid richting promotie."
+      ]
+    },
+    {
+      "id": "exp2",
+      "company": "Thuisbezorgd.nl",
+      "role": "Product Designer",
+      "location": "Amsterdam, Nederland",
+      "start": "jun 2018",
+      "end": "feb 2021",
+      "meta": "Amsterdam, Fulltime",
+      "description": "",
+      "highlights": [
+        "Owner van de onboarding flow voor de bezorgers-app en drop-off met een derde verlaagd.",
+        "Wekelijkse usability-sessies met bezorgers in drie steden georganiseerd."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "id": "edu1",
+      "school": "Hogeschool voor de Kunsten Utrecht",
+      "degree": "Bachelor Grafische Vormgeving",
+      "location": "Utrecht, Nederland",
+      "start": "sep 2013",
+      "end": "jun 2016",
+      "meta": "",
+      "description": "Typografie, interaction design, design research."
+    }
+  ],
+  "skills": [
+    {
+      "id": "skl1",
+      "name": "Professionele vaardigheden",
+      "columns": 2,
+      "items": [
+        {
+          "id": "ski1",
+          "title": "Product design",
+          "text": "Discovery, interaction design, prototyping"
+        },
+        {
+          "id": "ski2",
+          "title": "Design systems",
+          "text": "Component libraries, tokens, documentatie"
+        },
+        {
+          "id": "ski3",
+          "title": "Research",
+          "text": "Usability testing, interviews, synthese"
+        },
+        {
+          "id": "ski4",
+          "title": "Tools",
+          "text": "Figma, Framer, HTML & CSS"
+        }
+      ]
+    },
+    {
+      "id": "skl2",
+      "name": "Persoonlijke vaardigheden",
+      "columns": 1,
+      "items": [
+        {
+          "id": "ski5",
+          "title": "Talen",
+          "text": "Nederlands (moedertaal), Engels (vloeiend), Duits (conversatie)"
+        },
+        {
+          "id": "ski6",
+          "title": "Teamwork",
+          "text": "Rustig onder druk, duidelijke communicator, geniet van mentoring"
+        }
+      ]
+    }
+  ],
+  "projects": [],
+  "languages": [],
+  "custom": [],
+  "sectionOrder": ["experience", "education", "skills", "projects", "languages"]
+}

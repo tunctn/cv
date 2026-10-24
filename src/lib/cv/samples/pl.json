@@ -1,0 +1,116 @@
+{
+  "language": "pl",
+  "basics": {
+    "name": "Nadia Wójcik",
+    "headline": "Starsza Projektantka Produktu",
+    "email": "nadia@wojcik.design",
+    "phone": "",
+    "location": "Warszawa, Polska",
+    "website": "",
+    "summary": "Projektantka produktu z ośmioletnim doświadczeniem w tworzeniu oprogramowania dla klientów indywidualnych i biznesu. Przekładam złożone problemy na spokojne, intuicyjne interfejsy i ściśle współpracuję z zespołem inżynierskim, żeby szybko trafiały do użytkowników.",
+    "photo": "",
+    "links": []
+  },
+  "style": {},
+  "labels": {
+    "profile": "Profil",
+    "experience": "Doświadczenie",
+    "education": "Wykształcenie",
+    "skills": "Umiejętności",
+    "projects": "Projekty",
+    "languages": "Języki"
+  },
+  "experience": [
+    {
+      "id": "exp1",
+      "company": "mBank",
+      "role": "Starsza Projektantka Produktu",
+      "location": "Warszawa, Polska",
+      "start": "Mar 2021",
+      "end": "Obecnie",
+      "meta": "Warszawa, pełny etat",
+      "description": "Lead designerka oszczędności i budżetowania, współpracująca z dwoma zespołami inżynierskimi. Najważniejsze rezultaty:",
+      "highlights": [
+        "**Przebudowa skarbonek oszczędnościowych:** Poprowadziłam badania i projekt nowego doświadczenia skarbonek, zwiększając tygodniowe wpłaty o 18%.",
+        "**System designu:** Zbudowałam pierwszą współdzieloną bibliotekę komponentów, z której korzysta dziś 40+ projektantów.",
+        "**Mentoring:** Wspierałam cztery projektantki i projektantów w awansie."
+      ]
+    },
+    {
+      "id": "exp2",
+      "company": "Pyszne.pl",
+      "role": "Projektantka Produktu",
+      "location": "Warszawa, Polska",
+      "start": "Cze 2018",
+      "end": "Lut 2021",
+      "meta": "Warszawa, pełny etat",
+      "description": "",
+      "highlights": [
+        "Odpowiadałam za onboarding w aplikacji dla kurierów i zmniejszyłam odpływ o jedną trzecią.",
+        "Prowadziłam cotygodniowe sesje testów użyteczności z kurierami w trzech miastach."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "id": "edu1",
+      "school": "Akademia Sztuk Pięknych w Warszawie",
+      "degree": "Licencjat z projektowania graficznego",
+      "location": "Warszawa, Polska",
+      "start": "Wrz 2013",
+      "end": "Cze 2016",
+      "meta": "",
+      "description": "Typografia, projektowanie interfejsów, badania projektowe."
+    }
+  ],
+  "skills": [
+    {
+      "id": "skl1",
+      "name": "Umiejętności zawodowe",
+      "columns": 2,
+      "items": [
+        {
+          "id": "ski1",
+          "title": "Projektowanie produktu",
+          "text": "Discovery, projektowanie interakcji, prototypowanie"
+        },
+        {
+          "id": "ski2",
+          "title": "Systemy projektowe",
+          "text": "Biblioteki komponentów, tokeny, dokumentacja"
+        },
+        {
+          "id": "ski3",
+          "title": "Badania",
+          "text": "Testy użyteczności, wywiady, synteza"
+        },
+        {
+          "id": "ski4",
+          "title": "Narzędzia",
+          "text": "Figma, Framer, HTML & CSS"
+        }
+      ]
+    },
+    {
+      "id": "skl2",
+      "name": "Umiejętności personalne",
+      "columns": 1,
+      "items": [
+        {
+          "id": "ski5",
+          "title": "Języki",
+          "text": "Polski (ojczysty), angielski (zaawansowany), hiszpański (komunikatywny)"
+        },
+        {
+          "id": "ski6",
+          "title": "Praca zespołowa",
+          "text": "Spokój pod presją, jasna komunikacja, lubi mentoring"
+        }
+      ]
+    }
+  ],
+  "projects": [],
+  "languages": [],
+  "custom": [],
+  "sectionOrder": ["experience", "education", "skills", "projects", "languages"]
+}

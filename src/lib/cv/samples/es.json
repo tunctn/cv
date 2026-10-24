@@ -1,0 +1,116 @@
+{
+  "language": "es",
+  "basics": {
+    "name": "Nora Martínez",
+    "headline": "Senior Product Designer",
+    "email": "nora@martinez.design",
+    "phone": "",
+    "location": "Barcelona, España",
+    "website": "",
+    "summary": "Diseñadora de producto con ocho años de experiencia lanzando software de consumo y B2B. Convierto problemas complejos en interfaces claras y fáciles de usar, y trabajo codo con codo con ingeniería para sacarlos adelante.",
+    "photo": "",
+    "links": []
+  },
+  "style": {},
+  "labels": {
+    "profile": "Perfil",
+    "experience": "Experiencia",
+    "education": "Formación",
+    "skills": "Habilidades",
+    "projects": "Proyectos",
+    "languages": "Idiomas"
+  },
+  "experience": [
+    {
+      "id": "exp1",
+      "company": "Revolut",
+      "role": "Senior Product Designer",
+      "location": "Madrid, España",
+      "start": "Mar 2021",
+      "end": "Actualidad",
+      "meta": "Madrid, Jornada completa",
+      "description": "Diseñadora líder de ahorro y presupuesto, trabajando con dos equipos de ingeniería. Resultados clave:",
+      "highlights": [
+        "**Rediseño de huchas de ahorro:** Lideré la investigación y el diseño de la nueva experiencia de huchas, aumentando los ingresos semanales un 18%.",
+        "**Sistema de diseño:** Creé la primera biblioteca compartida de componentes, ahora usada por más de 40 diseñadores.",
+        "**Mentoría:** Acompañé a cuatro diseñadores en su promoción."
+      ]
+    },
+    {
+      "id": "exp2",
+      "company": "Glovo",
+      "role": "Product Designer",
+      "location": "Barcelona, España",
+      "start": "Jun 2018",
+      "end": "Feb 2021",
+      "meta": "Barcelona, Jornada completa",
+      "description": "",
+      "highlights": [
+        "Responsable del flujo de onboarding de la app para repartidores y reduje el abandono en un tercio.",
+        "Llevé a cabo sesiones semanales de usabilidad con repartidores en tres ciudades."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "id": "edu1",
+      "school": "Universitat de Barcelona",
+      "degree": "Grado en Diseño Gráfico y Comunicación Visual",
+      "location": "Barcelona, España",
+      "start": "Sep 2013",
+      "end": "Jun 2016",
+      "meta": "",
+      "description": "Tipografía, diseño de interacción, investigación de diseño."
+    }
+  ],
+  "skills": [
+    {
+      "id": "skl1",
+      "name": "Competencias profesionales",
+      "columns": 2,
+      "items": [
+        {
+          "id": "ski1",
+          "title": "Diseño de producto",
+          "text": "Discovery, diseño de interacción, prototipado"
+        },
+        {
+          "id": "ski2",
+          "title": "Sistemas de diseño",
+          "text": "Bibliotecas de componentes, tokens, documentación"
+        },
+        {
+          "id": "ski3",
+          "title": "Investigación",
+          "text": "Pruebas de usabilidad, entrevistas, síntesis"
+        },
+        {
+          "id": "ski4",
+          "title": "Herramientas",
+          "text": "Figma, Framer, HTML & CSS"
+        }
+      ]
+    },
+    {
+      "id": "skl2",
+      "name": "Competencias personales",
+      "columns": 1,
+      "items": [
+        {
+          "id": "ski5",
+          "title": "Idiomas",
+          "text": "Español (nativa), inglés (fluido), catalán (conversacional)"
+        },
+        {
+          "id": "ski6",
+          "title": "Trabajo en equipo",
+          "text": "Serena bajo presión, comunicativa y con gusto por la mentoría"
+        }
+      ]
+    }
+  ],
+  "projects": [],
+  "languages": [],
+  "custom": [],
+  "sectionOrder": ["experience", "education", "skills", "projects", "languages"]
+}

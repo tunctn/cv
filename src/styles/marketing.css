@@ -1,0 +1,91 @@
+/*
+ * Marketing page motion. Transform and opacity only; each plays once.
+ * Easing: --ease-out-expo (defined in styles.css).
+ */
+
+/* Hero entrance on first paint, staggered with --rise-delay. */
+@keyframes home-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes home-fade {
+  from {
+    opacity: 0;
+  }
+}
+.home-rise {
+  animation: home-rise 700ms var(--ease-out-expo) var(--rise-delay, 0ms) both;
+}
+
+/* Sections that start below the fold rise in once when scrolled to. */
+.reveal[data-state="armed"] {
+  opacity: 0;
+  transform: translateY(12px);
+}
+.reveal[data-state="shown"] {
+  transition:
+    opacity 500ms var(--ease-out-expo),
+    transform 600ms var(--ease-out-expo);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-rise {
+    animation: home-fade 300ms ease var(--rise-delay, 0ms) both;
+  }
+  .reveal[data-state="armed"] {
+    transform: none;
+  }
+  .reveal[data-state="shown"] {
+    transition: opacity 300ms ease;
+  }
+}
+
+/* Hero backdrop: a faint dot grid, like the editor canvas, fading out. */
+.home-dots {
+  background-image: radial-gradient(var(--canvas-dot) 1px, transparent 1px);
+  background-size: 20px 20px;
+  mask-image: radial-gradient(
+    ellipse 70% 80% at 50% 30%,
+    #000 25%,
+    transparent 75%
+  );
+}
+
+/* The editor window: rises and settles from a soft tilt, once. */
+@keyframes hero-window {
+  from {
+    opacity: 0;
+    transform: perspective(2400px) rotateX(10deg) translateY(28px);
+  }
+}
+.hero-window {
+  transform-origin: 50% 0;
+  animation: hero-window 1100ms var(--ease-out-expo) 200ms both;
+}
+
+/* The rewritten bullet glows once, then settles back to the page. */
+@keyframes hero-hl {
+  0% {
+    background-color: transparent;
+  }
+  15%,
+  55% {
+    background-color: color-mix(in oklab, #3b82f6 28%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in oklab, #3b82f6 28%, transparent);
+  }
+}
+.hero-hl {
+  border-radius: 2px;
+  animation: hero-hl 2800ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-window {
+    animation: home-fade 300ms ease 100ms both;
+  }
+  .hero-hl {
+    animation: none;
+  }
+}

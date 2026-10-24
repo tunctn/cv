@@ -1,0 +1,116 @@
+{
+  "language": "th",
+  "basics": {
+    "name": "นภา ศิริวัฒน์",
+    "headline": "Senior Product Designer",
+    "email": "napa@siriwat.design",
+    "phone": "",
+    "location": "กรุงเทพฯ, ไทย",
+    "website": "",
+    "summary": "Product designer ที่มีประสบการณ์ 8 ปีในการพัฒนาซอฟต์แวร์สำหรับผู้บริโภคและ B2B ฉันเปลี่ยนปัญหาที่ซับซ้อนให้เป็นอินเทอร์เฟซที่ใช้งานง่ายและสงบ ทำงานใกล้ชิดกับทีม engineering เพื่อส่งมอบงานให้พร้อมใช้งานจริง",
+    "photo": "",
+    "links": []
+  },
+  "style": {},
+  "labels": {
+    "profile": "โปรไฟล์",
+    "experience": "ประสบการณ์",
+    "education": "การศึกษา",
+    "skills": "ทักษะ",
+    "projects": "โปรเจกต์",
+    "languages": "ภาษา"
+  },
+  "experience": [
+    {
+      "id": "exp1",
+      "company": "KBank",
+      "role": "Senior Product Designer",
+      "location": "กรุงเทพฯ, ไทย",
+      "start": "มี.ค. 2021",
+      "end": "ปัจจุบัน",
+      "meta": "กรุงเทพฯ, งานประจำ",
+      "description": "Lead designer สำหรับ savings และ budgeting ทำงานร่วมกับ engineering 2 squads ผลลัพธ์สำคัญ:",
+      "highlights": [
+        "**Savings pots redesign:** นำการวิจัยและออกแบบประสบการณ์ pots แบบใหม่ ทำให้เงินฝากรายสัปดาห์เพิ่มขึ้น 18%.",
+        "**Design system:** สร้าง shared component library ชุดแรก ปัจจุบันมีนักออกแบบกว่า 40 คนใช้งาน.",
+        "**Mentoring:** โค้ชนักออกแบบ 4 คนจนได้เลื่อนตำแหน่ง."
+      ]
+    },
+    {
+      "id": "exp2",
+      "company": "Grab",
+      "role": "Product Designer",
+      "location": "กรุงเทพฯ, ไทย",
+      "start": "มิ.ย. 2018",
+      "end": "ก.พ. 2021",
+      "meta": "กรุงเทพฯ, งานประจำ",
+      "description": "",
+      "highlights": [
+        "ดูแล flow การ onboarding ของ rider app และลดอัตราการหลุดออกไปได้หนึ่งในสาม.",
+        "จัด usability sessions รายสัปดาห์กับ riders ใน 3 เมือง."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "id": "edu1",
+      "school": "จุฬาลงกรณ์มหาวิทยาลัย",
+      "degree": "ศิลปศาสตรบัณฑิต สาขาการออกแบบนิเทศศิลป์",
+      "location": "กรุงเทพฯ, ไทย",
+      "start": "ก.ย. 2013",
+      "end": "มิ.ย. 2016",
+      "meta": "",
+      "description": "Typography, interaction design, design research."
+    }
+  ],
+  "skills": [
+    {
+      "id": "skl1",
+      "name": "Professional skills",
+      "columns": 2,
+      "items": [
+        {
+          "id": "ski1",
+          "title": "Product design",
+          "text": "Discovery, interaction design, prototyping"
+        },
+        {
+          "id": "ski2",
+          "title": "Design systems",
+          "text": "Component libraries, tokens, documentation"
+        },
+        {
+          "id": "ski3",
+          "title": "Research",
+          "text": "Usability testing, interviews, synthesis"
+        },
+        {
+          "id": "ski4",
+          "title": "Tools",
+          "text": "Figma, Framer, HTML & CSS"
+        }
+      ]
+    },
+    {
+      "id": "skl2",
+      "name": "Personal skills",
+      "columns": 1,
+      "items": [
+        {
+          "id": "ski5",
+          "title": "Languages",
+          "text": "Thai (native), English (conversational), Japanese (conversational)"
+        },
+        {
+          "id": "ski6",
+          "title": "Teamwork",
+          "text": "Calm under pressure, clear communicator, enjoys mentoring"
+        }
+      ]
+    }
+  ],
+  "projects": [],
+  "languages": [],
+  "custom": [],
+  "sectionOrder": ["experience", "education", "skills", "projects", "languages"]
+}

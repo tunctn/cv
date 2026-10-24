@@ -1,0 +1,116 @@
+{
+  "language": "it",
+  "basics": {
+    "name": "Nora Ferri",
+    "headline": "Senior Product Designer",
+    "email": "nora@ferri.design",
+    "phone": "",
+    "location": "Milano, Italia",
+    "website": "",
+    "summary": "Product designer con otto anni di esperienza nello sviluppo di software B2C e B2B. Trasformo problemi complessi in interfacce chiare e semplici da usare, lavorando a stretto contatto con l’ingegneria per portarle sul mercato.",
+    "photo": "",
+    "links": []
+  },
+  "style": {},
+  "labels": {
+    "profile": "Profilo",
+    "experience": "Esperienza",
+    "education": "Formazione",
+    "skills": "Competenze",
+    "projects": "Progetti",
+    "languages": "Lingue"
+  },
+  "experience": [
+    {
+      "id": "exp1",
+      "company": "N26",
+      "role": "Senior Product Designer",
+      "location": "Milano, Italia",
+      "start": "Mar 2021",
+      "end": "Presente",
+      "meta": "Milano, Tempo pieno",
+      "description": "Lead designer per risparmio e budgeting, lavorando con due squadre di engineering. Risultati principali:",
+      "highlights": [
+        "**Riprogettazione dei salvadanai:** Ho guidato ricerca e design della nuova esperienza dei salvadanai, aumentando i versamenti settimanali del 18%.",
+        "**Design system:** Ho creato la prima libreria condivisa di componenti, oggi usata da oltre 40 designer.",
+        "**Mentoring:** Ho affiancato quattro designer nel percorso di promozione."
+      ]
+    },
+    {
+      "id": "exp2",
+      "company": "Glovo",
+      "role": "Product Designer",
+      "location": "Milano, Italia",
+      "start": "Giu 2018",
+      "end": "Feb 2021",
+      "meta": "Milano, Tempo pieno",
+      "description": "",
+      "highlights": [
+        "Ho curato il flusso di onboarding dell’app per rider, riducendo l’abbandono di un terzo.",
+        "Ho condotto sessioni settimanali di usability con rider in tre città."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "id": "edu1",
+      "school": "Politecnico di Milano",
+      "degree": "Laurea triennale in Design della comunicazione",
+      "location": "Milano, Italia",
+      "start": "Set 2013",
+      "end": "Giu 2016",
+      "meta": "",
+      "description": "Tipografia, interaction design, ricerca sul design."
+    }
+  ],
+  "skills": [
+    {
+      "id": "skl1",
+      "name": "Competenze professionali",
+      "columns": 2,
+      "items": [
+        {
+          "id": "ski1",
+          "title": "Product design",
+          "text": "Discovery, interaction design, prototyping"
+        },
+        {
+          "id": "ski2",
+          "title": "Design systems",
+          "text": "Component libraries, tokens, documentation"
+        },
+        {
+          "id": "ski3",
+          "title": "Ricerca",
+          "text": "Usability testing, interviste, sintesi"
+        },
+        {
+          "id": "ski4",
+          "title": "Tools",
+          "text": "Figma, Framer, HTML & CSS"
+        }
+      ]
+    },
+    {
+      "id": "skl2",
+      "name": "Competenze personali",
+      "columns": 1,
+      "items": [
+        {
+          "id": "ski5",
+          "title": "Lingue",
+          "text": "Italiano (madrelingua), Inglese (conversazione), Spagnolo (base)"
+        },
+        {
+          "id": "ski6",
+          "title": "Teamwork",
+          "text": "Tranquilla sotto pressione, comunicazione chiara, mi piace fare mentoring"
+        }
+      ]
+    }
+  ],
+  "projects": [],
+  "languages": [],
+  "custom": [],
+  "sectionOrder": ["experience", "education", "skills", "projects", "languages"]
+}

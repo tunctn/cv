@@ -1,4 +1,4 @@
-FROM node:22-bookworm-slim AS build
+FROM node:24-bookworm-slim AS build
 WORKDIR /app
 RUN npm i -g pnpm@12.15.0
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
@@ -13,7 +13,7 @@ RUN printf '//npm.hugeicons.com/:_authToken=%s\n' "$HUGEICONS_TOKEN" > /root/.np
 COPY . .
 RUN pnpm build
 
-FROM node:22-bookworm-slim
+FROM node:24-bookworm-slim
 WORKDIR /app
 ENV NODE_ENV=production \
     PORT=3000 \

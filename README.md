@@ -110,6 +110,8 @@ pnpm dev                     # http://localhost:3033
 
 The `Dockerfile` builds the app with pnpm (the Hugeicons token is passed as the `HUGEICONS_TOKEN` build argument and never reaches the runtime image), installs headless Chromium for export, and runs the database migrations (`scripts/migrate.mjs`) on every start, before the server. The live site runs on a single server with Coolify, with Postgres as a separate Coolify resource.
 
+Dependency updates come from self-hosted Renovate (`.github/workflows/renovate.yml`, config in `renovate.json`): every Monday it opens one PR with all bumps. Run it any time from the Actions tab or with `gh workflow run renovate.yml`. It needs the repo secrets `RENOVATE_TOKEN` and `HUGEICONS_TOKEN`.
+
 ## Project structure
 
 ```
